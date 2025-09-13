@@ -1,5 +1,3 @@
-# SecHack365_electronic-medical-record
-
 # SecHack365 患者中心の医療DXプロジェクト (9月中間発表)
 
 このリポジトリは、SecHack365プロジェクトの9月中間発表に向けた「対話の基盤」のプロトタイプ実装を含んでいます。
