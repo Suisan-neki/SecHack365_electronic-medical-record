@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>診療ディスプレイ</title>
+    <link rel="stylesheet" href="{{ url_for(\'static\', filename=\'style.css\') }}">
+</head>
+<body>
+    <div id="private-view">
+        <h1>医師向けプライベートビュー</h1>
+        <!-- 医師向けの情報を表示 -->
+        <button onclick="switchView(\'patient\')">患者向けビューに切り替え</button>
+    </div>
+    <div id="patient-view" style="display:none;">
+        <h1>患者向けビュー</h1>
+        <h2 id="patient-name"></h2>
+        <h3>処方薬</h3>
+        <ul id="medications"></ul>
+        <h3>検査結果</h3>
+        <div id="test-results"></div>
+        <!-- 患者向けの情報を表示 -->
+        <button onclick="switchView(\'private\')">プライベートビューに切り替え</button>
+    </div>
+
+    <script src="{{ url_for(\'static\', filename=\'script.js\') }}"></script>
+</body>
+</html>
