@@ -4,25 +4,143 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>診療ディスプレイ</title>
-    <link rel="stylesheet" href="{{ url_for(\'static\', filename=\'style.css\') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div id="private-view">
-        <h1>医師向けプライベートビュー</h1>
-        <!-- 医師向けの情報を表示 -->
-        <button onclick="switchView(\'patient\')">患者向けビューに切り替え</button>
+        <h1>🩺 医師向けプライベートビュー</h1>
+        
+        <div id="auth-section">
+            <div class="auth-form">
+                <h3>認証</h3>
+                <input type="text" id="user-id" placeholder="ユーザーID" value="demo_doctor">
+                <select id="role">
+                    <option value="doctor">医師</option>
+                    <option value="nurse">看護師</option>
+                    <option value="admin">管理者</option>
+                </select>
+                <button onclick="performLogin()">ログイン</button>
+            </div>
+            <div id="auth-status" style="margin-top: 15px;"></div>
+        </div>
+        
+        <div id="controls-section" style="display:none;">
+            <div id="user-permissions" class="permissions-display"></div>
+            
+            <!-- 患者情報カード -->
+            <div class="patient-card">
+                <div class="card-header">
+                    <h3>👤 患者情報</h3>
+                    <div class="patient-status">準備完了</div>
+                </div>
+                <div class="patient-details">
+                    <div class="patient-detail-item">
+                        <span class="detail-label">患者名</span>
+                        <span class="detail-value" id="doctor-patient-name">データを読み込んでください</span>
+                    </div>
+                    <div class="patient-detail-item">
+                        <span class="detail-label">年齢・性別</span>
+                        <span class="detail-value">
+                            <span id="doctor-patient-age">-</span> / <span id="doctor-patient-gender">-</span>
+                        </span>
+                    </div>
+                    <div class="patient-detail-item">
+                        <span class="detail-label">患者ID</span>
+                        <span class="detail-value" id="doctor-patient-id">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- メイン操作エリア -->
+            <div class="main-actions">
+                <div class="action-card primary-action" onclick="loadPatientData()">
+                    <div class="action-icon">📊</div>
+                    <div class="action-content">
+                        <h4>電子カルテデータ変換</h4>
+                        <p>標準型EHRから患者向け情報を生成</p>
+                    </div>
+                </div>
+                
+                <div class="action-card secondary-action" onclick="switchView('patient')">
+                    <div class="action-icon">👥</div>
+                    <div class="action-content">
+                        <h4>患者向けビュー</h4>
+                        <p>患者が理解しやすい形で情報を表示</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 詳細操作 -->
+            <div class="advanced-section">
+                <button class="toggle-advanced" onclick="toggleAdvancedOptions()">
+                    🔧 詳細操作・デバッグ <span id="advanced-toggle">▼</span>
+                </button>
+                
+                <div id="advanced-options" style="display:none;">
+                    <div class="advanced-grid">
+                        <button onclick="showRawEHRData()" class="advanced-button">
+                            🗃️ 生データ確認
+                        </button>
+                        <button onclick="showSecurityDemo()" class="advanced-button">
+                            🔒 セキュリティ検証
+                        </button>
+                        <button onclick="testPermissions()" class="advanced-button">
+                            🔑 権限テスト
+                        </button>
+                    </div>
+                    
+                    <div class="permission-test-section" style="display:none;" id="permission-test-area">
+                        <h4>🎯 権限別機能テスト</h4>
+                        <div class="permission-buttons">
+                            <button onclick="testPrescription()" class="perm-button" id="prescribe-btn">💊 処方箋発行</button>
+                            <button onclick="testVitalsUpdate()" class="perm-button" id="vitals-btn">🩺 バイタル更新</button>
+                            <button onclick="testUserManagement()" class="perm-button" id="users-btn">👥 ユーザー管理</button>
+                        </div>
+                        <div id="permission-test-results"></div>
+                    </div>
+                    
+                    <div id="security-demo" class="security-demo" style="display:none;">
+                        <h4>🔐 セキュリティ検証プロセス</h4>
+                        <div id="security-steps"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作履歴 -->
+            <div class="activity-feed">
+                <h4>📝 最近の操作</h4>
+                <div id="operation-history"></div>
+            </div>
+        </div>
     </div>
-    <div id="patient-view" style="display:none;">
-        <h1>患者向けビュー</h1>
+    <div id="patient-view" style="display:none;" class="fade-in">
+        <h1>🏥 診療情報</h1>
         <h2 id="patient-name"></h2>
-        <h3>処方薬</h3>
-        <ul id="medications"></ul>
-        <h3>検査結果</h3>
-        <div id="test-results"></div>
-        <!-- 患者向けの情報を表示 -->
-        <button onclick="switchView(\'private\')">プライベートビューに切り替え</button>
+        
+        <div class="medication-section">
+            <h3 class="section-title">
+                <span class="medication-icon">💊</span>
+                処方薬
+            </h3>
+            <ul id="medications"></ul>
+        </div>
+        
+        <div class="test-results-section">
+            <h3 class="section-title">
+                <span class="test-icon">📊</span>
+                検査結果
+            </h3>
+            <div id="test-results"></div>
+        </div>
+        
+        <div class="security-info">
+            <div class="security-icon">🔒</div>
+            <strong>この情報は暗号化され、電子署名により保護されています</strong>
+        </div>
+        
+        <button onclick="switchView('private')">プライベートビューに切り替え</button>
     </div>
 
-    <script src="{{ url_for(\'static\', filename=\'script.js\') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

@@ -12,7 +12,7 @@ def generate_keys():
 
 def sign_data(private_key, data):
     signature = private_key.sign(
-        data.encode(\'utf-8\'),
+        data.encode('utf-8'),
         padding.PSS(
             mgf=padding.MGF1(hashes.SHA256()),
             salt_length=padding.PSS.MAX_LENGTH
@@ -25,7 +25,7 @@ def verify_signature(public_key, data, signature):
     try:
         public_key.verify(
             signature,
-            data.encode(\'utf-8\'),
+            data.encode('utf-8'),
             padding.PSS(
                 mgf=padding.MGF1(hashes.SHA256()),
                 salt_length=padding.PSS.MAX_LENGTH
@@ -34,5 +34,5 @@ def verify_signature(public_key, data, signature):
         )
         return True
     except Exception as e:
-        print(f\"署名検証失敗: {e}\")
+        print(f"署名検証失敗: {e}")
         return False
