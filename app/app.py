@@ -39,9 +39,9 @@ def get_raw_ehr_data():
 
 @app.route('/patient_data')
 def get_patient_data():
-    """標準型電子カルテデータから患者向け情報を生成"""
+    """既存電子カルテシステムから現在の診察患者データを抽出"""
     try:
-        # 標準型電子カルテデータを読み込み
+        # 標準型電子カルテデータを読み込み（実際のシステムでは外部APIから取得）
         with open('app/standard_ehr_data.json', 'r', encoding='utf-8') as f:
             ehr_data = json.load(f)
         
@@ -57,9 +57,11 @@ def get_patient_data():
         # ハッシュチェーンに記録
         hash_chain = HashChain()
         hash_chain.add_block({
-            "action": "patient_data_translation", 
+            "action": "patient_data_extraction", 
             "patient_id": patient_friendly_data.get("patient_info", {}).get("patient_id", "P001"), 
-            "timestamp": "2025-09-15T10:30:00Z",
+            "ehr_system": "FHIR標準型電子カルテシステム",
+            "session_id": "SESSION_2025091515",
+            "timestamp": "2025-09-15T15:30:00Z",
             "translator_version": "1.0.0"
         })
         
@@ -70,8 +72,10 @@ def get_patient_data():
                 'signature_valid': is_valid,
                 'hash_chain_valid': hash_chain.is_valid(),
                 'encrypted': True,  # HTTPS通信により暗号化
-                'data_source': 'standard_ehr_translated',
-                'timestamp': '2025-09-15T10:30:00Z'
+                'data_source': 'ehr_system_extraction',
+                'ehr_system': 'FHIR標準型電子カルテシステム',
+                'session_id': 'SESSION_2025091515',
+                'timestamp': '2025-09-15T15:30:00Z'
             }
         }
         
@@ -79,8 +83,8 @@ def get_patient_data():
         
     except Exception as e:
         return jsonify({
-            "error": f"電子カルテデータの変換に失敗しました: {str(e)}",
-            "error_type": "translation_error"
+            "error": f"電子カルテシステムからのデータ抽出に失敗しました: {str(e)}",
+            "error_type": "extraction_error"
         }), 500
 
 # 以下はハッシュチェーンと電子署名のデモ用エンドポイント（必要に応じて追加）
