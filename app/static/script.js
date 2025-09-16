@@ -2,12 +2,133 @@ function switchView(viewType) {
     if (viewType === 'patient') {
         document.getElementById('private-view').style.display = 'none';
         document.getElementById('patient-view').style.display = 'block';
+        document.getElementById('medical-detail-view').style.display = 'none';
         fetchPatientData();
         addToOperationHistory('患者向けビューに切り替え', 'view_switch');
     } else {
         document.getElementById('private-view').style.display = 'block';
         document.getElementById('patient-view').style.display = 'none';
+        document.getElementById('medical-detail-view').style.display = 'none';
         addToOperationHistory('医師向けビューに切り替え', 'view_switch');
+    }
+}
+
+// メニューから詳細画面への遷移
+function showMedicalDetail(detailType) {
+    document.getElementById('patient-view').style.display = 'none';
+    document.getElementById('medical-detail-view').style.display = 'block';
+    
+    // すべての詳細セクションを非表示
+    document.querySelectorAll('.detail-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // 患者名を詳細画面にもコピー
+    const patientName = document.getElementById('patient-name').textContent;
+    document.getElementById('detail-patient-name').textContent = patientName;
+    
+    // 選択された詳細タイプに応じて表示
+    switch(detailType) {
+        case 'conditions':
+            document.getElementById('detail-title').textContent = '現在の病気・症状';
+            document.getElementById('conditions-detail').style.display = 'block';
+            loadConditionsDetail();
+            break;
+        case 'medications':
+            document.getElementById('detail-title').textContent = '処方薬';
+            document.getElementById('medications-detail').style.display = 'block';
+            loadMedicationsDetail();
+            break;
+        case 'tests':
+            document.getElementById('detail-title').textContent = '検査結果';
+            document.getElementById('tests-detail').style.display = 'block';
+            loadTestsDetail();
+            break;
+    }
+}
+
+// メニューに戻る
+function backToMenu() {
+    document.getElementById('medical-detail-view').style.display = 'none';
+    document.getElementById('patient-view').style.display = 'block';
+}
+
+// 病気・症状の詳細を読み込む
+async function loadConditionsDetail() {
+    const response = await fetch('/patient_data');
+    const data = await response.json();
+    
+    const conditionsList = document.getElementById('conditions-list');
+    conditionsList.innerHTML = '';
+    
+    if (data.current_conditions && data.current_conditions.length > 0) {
+        data.current_conditions.forEach(condition => {
+            const conditionDiv = document.createElement('div');
+            conditionDiv.className = 'condition-item';
+            conditionDiv.innerHTML = `
+                <h4>${condition.name}</h4>
+                <p><strong>状態:</strong> ${condition.status}</p>
+                <p><strong>説明:</strong> ${condition.explanation}</p>
+                <p><strong>診断日:</strong> ${condition.diagnosed_date}</p>
+            `;
+            conditionsList.appendChild(conditionDiv);
+        });
+    } else {
+        conditionsList.innerHTML = '<p>現在治療中の病気はありません</p>';
+    }
+}
+
+// 処方薬の詳細を読み込む
+async function loadMedicationsDetail() {
+    const response = await fetch('/patient_data');
+    const data = await response.json();
+    
+    const medicationsList = document.querySelector('#medications-detail ul');
+    medicationsList.innerHTML = '';
+    
+    if (data.medications && data.medications.length > 0) {
+        data.medications.forEach(medication => {
+            const medicationDiv = document.createElement('div');
+            medicationDiv.className = 'medication-item';
+            medicationDiv.innerHTML = `
+                <h4>${medication.name}</h4>
+                <p><strong>用法:</strong> ${medication.dosage}</p>
+                <p><strong>効果:</strong> ${medication.purpose}</p>
+                <p><strong>注意事項:</strong> ${medication.precautions}</p>
+            `;
+            
+            const listItem = document.createElement('li');
+            listItem.appendChild(medicationDiv);
+            medicationsList.appendChild(listItem);
+        });
+    } else {
+        medicationsList.innerHTML = '<li><p>現在処方されている薬はありません</p></li>';
+    }
+}
+
+// 検査結果の詳細を読み込む
+async function loadTestsDetail() {
+    const response = await fetch('/patient_data');
+    const data = await response.json();
+    
+    const testResults = document.querySelector('#tests-detail #test-results');
+    testResults.innerHTML = '';
+    
+    if (data.test_results && data.test_results.length > 0) {
+        data.test_results.forEach(test => {
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test-result-item';
+            testDiv.innerHTML = `
+                <h4>${test.name}</h4>
+                <p><strong>結果:</strong> ${test.value} ${test.unit}</p>
+                <p><strong>基準値:</strong> ${test.normal_range}</p>
+                <p><strong>検査日:</strong> ${test.date}</p>
+                ${test.doctor_comment ? `<p><strong>医師コメント:</strong> ${test.doctor_comment}</p>` : ''}
+            `;
+            testResults.appendChild(testDiv);
+        });
+    } else {
+        testResults.innerHTML = '<p>検査結果がありません</p>';
     }
 }
 
