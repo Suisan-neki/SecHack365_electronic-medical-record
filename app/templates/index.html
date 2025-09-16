@@ -124,32 +124,65 @@
             </div>
         </div>
     </div>
-    <div id="patient-view" style="display:none;" class="fade-in">
-        <h1>🏥 診療情報</h1>
-        <h2 id="patient-name"></h2>
-        
-        <div class="medication-section">
-            <h3 class="section-title">
-                <span class="medication-icon">💊</span>
-                処方薬
-            </h3>
-        <ul id="medications"></ul>
+    <!-- 患者向けメニュー画面 -->
+    <div id="patient-view" style="display:none;" class="fade-in patient-display-7inch">
+        <div class="patient-header">
+            <h1>診療情報</h1>
+            <h2 id="patient-name"></h2>
         </div>
         
-        <div class="test-results-section">
-            <h3 class="section-title">
-                <span class="test-icon">📊</span>
-                検査結果
-            </h3>
-        <div id="test-results"></div>
+        <div class="medical-menu">
+            <div class="menu-item" onclick="showMedicalDetail('conditions')">
+                <h3>現在の病気・症状</h3>
+                <p>診断された病気や症状を確認</p>
+            </div>
+            
+            <div class="menu-item" onclick="showMedicalDetail('medications')">
+                <h3>処方薬</h3>
+                <p>現在処方されている薬の情報</p>
+            </div>
+            
+            <div class="menu-item" onclick="showMedicalDetail('tests')">
+                <h3>検査結果</h3>
+                <p>最新の検査結果と数値</p>
+            </div>
         </div>
         
-        <div class="security-info">
-            <div class="security-icon">🔒</div>
-            <strong>この情報は暗号化され、電子署名により保護されています</strong>
+        <div class="security-footer">
+            <p>この情報は暗号化により保護されています</p>
         </div>
         
-        <button onclick="switchView('private')">プライベートビューに切り替え</button>
+        <button onclick="switchView('private')" class="back-button">画面に戻る</button>
+    </div>
+
+    <!-- 個別詳細画面 -->
+    <div id="medical-detail-view" style="display:none;" class="fade-in patient-display-7inch">
+        <div class="detail-header">
+            <button onclick="backToMenu()" class="back-to-menu-btn">← メニューに戻る</button>
+            <h1 id="detail-title"></h1>
+            <h2 id="detail-patient-name"></h2>
+        </div>
+        
+        <div class="detail-content">
+            <!-- 病気・症状 -->
+            <div id="conditions-detail" class="detail-section" style="display:none;">
+                <div id="conditions-list"></div>
+            </div>
+            
+            <!-- 処方薬 -->
+            <div id="medications-detail" class="detail-section" style="display:none;">
+                <ul id="medications"></ul>
+            </div>
+            
+            <!-- 検査結果 -->
+            <div id="tests-detail" class="detail-section" style="display:none;">
+                <div id="test-results"></div>
+            </div>
+        </div>
+        
+        <div class="security-footer">
+            <p>この情報は暗号化により保護されています</p>
+        </div>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
