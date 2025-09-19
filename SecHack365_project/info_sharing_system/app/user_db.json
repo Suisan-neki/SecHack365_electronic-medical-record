@@ -1,0 +1,89 @@
+{
+    "doctor1": {
+        "password": "f04e98c655bfc05e5428b178c8c804b34315dd833cc70b8caf18bbb749661092",
+        "salt": "e84a3f15ee73726f6702a36f9f0641a7",
+        "role": "doctor",
+        "mfa_enabled": true,
+        "mfa_secret": "JZ5J5VZ3N3CFWKQPLIXKLGY7GPGMNVFS",
+        "created_at": "{\"timestamp\": \"auto-generated\"}",
+        "last_login": "{\"timestamp\": \"auto-generated\"}",
+        "mfa_backup_codes": [
+            "36748073",
+            "51738735",
+            "47641133",
+            "12009414",
+            "67497923",
+            "36513783",
+            "45213615"
+        ],
+        "webauthn_challenges": {},
+        "webauthn_credentials": [
+            {
+                "credential_id": "eoywxNnW9HNMrR_kZ3OR26IKRlqjT0B5ELxzHR7IiVo=",
+                "public_key": "pQECAyYgASFYIB74WRang0sVvgQ9hfHERS-XkBU3YGqqhjnOLAlE35kkIlggo0rfZaLigfXGyjn-860gTN-49N6nJPzbnIeHZRexVo8=",
+                "sign_count": 0,
+                "created_at": "{\"timestamp\": \"auto-generated\"}"
+            },
+            {
+                "credential_id": "Ec9zWGft4cwYQ48kEwhyZDWyrSPa2bQ9UIqrDnfRfvw=",
+                "public_key": "pQECAyYgASFYIKnOg2TwJOOcyinK3jg-VpXDEbHgzo9uTOujxbAD0bgRIlgg6XzJgv8hmY9NGp75Q0WQLBC1S68vL47_FoOD7gl5O2Q=",
+                "sign_count": 0,
+                "created_at": "{\"timestamp\": \"auto-generated\"}"
+            },
+            {
+                "credential_id": "aJXPiOQ4j7s-AWlE16ss4RKsRXIuCd5SxdwoC5HFN3Q=",
+                "public_key": "pQECAyYgASFYIOfu1W1udEXLGICB0Smn7p5CXNM2O50boVRYJOvpzpQqIlggdtw_49T6TGcDh_yXz741no5DqpdO6dxIFZ0XtehF-8M=",
+                "sign_count": 0,
+                "created_at": "{\"timestamp\": \"auto-generated\"}"
+            },
+            {
+                "credential_id": "4TdLZIe54b8hwp5heEHlFMlJ7A-7xcHPBXE3iWjZtDE=",
+                "public_key": "pQECAyYgASFYIOINElu0otWorV4H5TPrs_pVIh2PjkN1o8JlBM6v-_H9IlggbjJSjqRqjlzLA8UmcwAZptahhv7-gyk1bcZv7yRKEaA=",
+                "sign_count": 0,
+                "created_at": "{\"timestamp\": \"auto-generated\"}"
+            },
+            {
+                "credential_id": "SDnGeLN9sOzUN9S5XkD7oeXhscLNfV1kd9hzKjYOSCE=",
+                "public_key": "pQECAyYgASFYINJBNjMPre_GAKwUPn179b7bhdYtDgBXR3TzfzmOnfVHIlggC-j4_uXVBzYoHrDjxtTIHeWitBf-KbbNu9GURU4sEHI=",
+                "sign_count": 0,
+                "created_at": "{\"timestamp\": \"auto-generated\"}"
+            },
+            {
+                "credential_id": "SlXV1MjK9PcTznPlbaS9AC4N-Fvm7lpSwr2Eu9uAnxg=",
+                "public_key": "pQECAyYgASFYIKJrGr7s1iFSwLaklqIZ6dXRrT26vNhu893w8v7cXCO1IlggIhzRcQlKxStvCEvoiImfG28YIR6ixZgZ50ZM08c9d5c=",
+                "sign_count": 2,
+                "created_at": "{\"timestamp\": \"auto-generated\"}"
+            }
+        ]
+    },
+    "nurse1": {
+        "password": "efce3be68795739b38bc6f4a3853d0554827151e0efa4f68a026a1fb479cbfe3",
+        "salt": "7b0bc26ef9ebf9659d0dfdd4a87da1bd",
+        "role": "nurse",
+        "mfa_enabled": false,
+        "mfa_secret": null,
+        "created_at": "{\"timestamp\": \"auto-generated\"}",
+        "last_login": "{\"timestamp\": \"auto-generated\"}",
+        "mfa_backup_codes": null
+    },
+    "patient1": {
+        "password": "0813110c6ce26c14b23be9bf4e92978870c7444bdffded90c2a161c4fd277a12",
+        "salt": "bf57ed3dc8df5f7a2c0a30da13f8f3d7",
+        "role": "patient",
+        "mfa_enabled": false,
+        "mfa_secret": null,
+        "created_at": "{\"timestamp\": \"auto-generated\"}",
+        "last_login": null,
+        "mfa_backup_codes": null
+    },
+    "admin1": {
+        "password": "4234443ddba6879033d91f41dc57c52157a22f6ab3ab4c54aa5d1bb945324473",
+        "salt": "4b659e86cec7fd34ac19517dc8ee4061",
+        "role": "admin",
+        "mfa_enabled": false,
+        "mfa_secret": null,
+        "created_at": "{\"timestamp\": \"auto-generated\"}",
+        "last_login": null,
+        "mfa_backup_codes": null
+    }
+}

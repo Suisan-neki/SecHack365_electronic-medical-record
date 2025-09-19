@@ -4,11 +4,13 @@ import os
 from datetime import datetime
 from cryptography.hazmat.primitives import serialization
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from webauthn.helpers.structs import RegistrationCredential, AuthenticationCredential
 
 # coreモジュールから必要な機能をインポート
 from core.digital_signature import generate_keys, sign_data, verify_signature
 from core.hash_chain import HashChain
-from core.authentication import UserAuthenticator # 新しく追加
+from core.authentication import UserAuthenticator
+from core.authorization import ABACPolicyEnforcer # ABAC機能を追加
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.urandom(24) # セッション管理のための秘密鍵
@@ -24,6 +26,9 @@ def inject_user():
 
 # UserAuthenticatorの初期化
 authenticator = UserAuthenticator(os.path.join(app.root_path, "user_db.json"))
+
+# ABACPolicyEnforcerの初期化
+abac_enforcer = ABACPolicyEnforcer(os.path.join(app.root_path, "..", "..", "abac_policy.json")) # パスを調整
 
 # Flask-LoginのためのUserクラス
 class User(UserMixin):
@@ -49,7 +54,7 @@ DATA_FILE = os.path.join(app.root_path, 'demo_karte.json')
 CERT_DIR = os.path.join(app.root_path, 'certs')
 
 # ハッシュチェーンの初期化
-        hash_chain = HashChain()
+hash_chain = HashChain()
 
 # 秘密鍵と公開鍵の生成（または既存のものをロード）
 # 実際には、これらはセキュアな方法で管理されるべきです。
@@ -177,14 +182,26 @@ def mfa_verify():
 @app.route('/logout')
 @login_required
 def logout():
+    # WebAuthnチャレンジをクリア（ログアウト時の古いチャレンジを削除）
+    try:
+        user_data = authenticator.users.get(current_user.id)
+        if user_data and 'webauthn_challenges' in user_data:
+            user_data['webauthn_challenges'].clear()
+            authenticator._save_users()
+    except Exception as e:
+        print(f"[DEBUG] ログアウト時のチャレンジクリアエラー: {e}")
+    
     logout_user()
     return redirect(url_for('login'))
 
 @app.route('/api/patient/<patient_id>', methods=['GET'])
 @login_required
 def get_patient_data(patient_id):
-    # 医師または管理者のみが患者情報を閲覧できると仮定
-    if current_user.role not in ['doctor', 'admin']:
+    subject_attributes = {"id": current_user.id, "role": current_user.role}
+    action = "view"
+    resource_attributes = {"type": "patient_data", "patient_id": patient_id}
+
+    if not abac_enforcer.check_access(subject_attributes, action, resource_attributes):
         return jsonify({'error': 'Permission denied'}), 403
 
     patient = karte_data.get(patient_id)
@@ -220,8 +237,11 @@ def get_patient_data(patient_id):
 @app.route('/api/patient/<patient_id>/add_record', methods=['POST'])
 @login_required
 def add_medical_record(patient_id):
-    # 医師または管理者のみがカルテを追加できると仮定
-    if current_user.role not in ['doctor', 'admin']:
+    subject_attributes = {"id": current_user.id, "role": current_user.role}
+    action = "add"
+    resource_attributes = {"type": "patient_data", "patient_id": patient_id}
+
+    if not abac_enforcer.check_access(subject_attributes, action, resource_attributes):
         return jsonify({'error': 'Permission denied'}), 403
 
     patient = karte_data.get(patient_id)
@@ -253,6 +273,103 @@ def add_medical_record(patient_id):
 
     save_karte_data(karte_data)
     return jsonify({'message': 'Medical record added successfully', 'record': record_entry}), 201
+
+# WebAuthn関連のエンドポイント
+@app.route('/webauthn_register')
+@login_required
+def webauthn_register():
+    """WebAuthn認証器登録ページを表示"""
+    return render_template('webauthn_register.html', username=current_user.id)
+
+@app.route('/webauthn/register/begin', methods=['POST'])
+@login_required
+def webauthn_register_begin():
+    """WebAuthn認証器登録を開始"""
+    try:
+        registration_options = authenticator.generate_webauthn_registration_options(current_user.id)
+        if registration_options:
+            return jsonify(registration_options)
+        else:
+            return jsonify({'error': '登録オプションの生成に失敗しました'}), 500
+    except Exception as e:
+        return jsonify({'error': f'登録開始エラー: {str(e)}'}), 500
+
+@app.route('/webauthn/register/complete', methods=['POST'])
+@login_required
+def webauthn_register_complete():
+    """WebAuthn認証器登録を完了"""
+    try:
+        data = request.get_json()
+        registration_response = data.get('registrationResponse')
+        challenge = data.get('challenge')
+        
+        if not registration_response or not challenge:
+            return jsonify({'error': '必要なデータが不足しています'}), 400
+        
+        success, message = authenticator.verify_webauthn_registration_response(
+            current_user.id, registration_response, challenge
+        )
+        
+        if success:
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'error': message}), 400
+            
+    except Exception as e:
+        return jsonify({'error': f'登録完了エラー: {str(e)}'}), 500
+
+@app.route('/webauthn_login')
+def webauthn_login():
+    """WebAuthnログインページを表示"""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    return render_template('webauthn_login.html')
+
+@app.route('/webauthn/login/begin', methods=['POST'])
+def webauthn_login_begin():
+    """WebAuthn認証を開始"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        
+        if not username:
+            return jsonify({'error': 'ユーザー名が必要です'}), 400
+        
+        authentication_options = authenticator.generate_webauthn_authentication_options(username)
+        if authentication_options:
+            return jsonify(authentication_options)
+        else:
+            return jsonify({'error': 'WebAuthn認証器が登録されていません'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': f'認証開始エラー: {str(e)}'}), 500
+
+@app.route('/webauthn/login/complete', methods=['POST'])
+def webauthn_login_complete():
+    """WebAuthn認証を完了"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        authentication_response = data.get('authenticationResponse')
+        challenge = data.get('challenge')
+        
+        if not username or not authentication_response or not challenge:
+            return jsonify({'error': '必要なデータが不足しています'}), 400
+        
+        success, message = authenticator.verify_webauthn_authentication_response(
+            username, authentication_response, challenge
+        )
+        
+        if success:
+            # ユーザーをログイン状態にする
+            user = User(username, authenticator.get_user_role(username))
+            login_user(user)
+            return jsonify({'success': True, 'message': message, 'redirect': url_for('index')})
+        else:
+            return jsonify({'success': False, 'error': message}), 400
+            
+    except Exception as e:
+        return jsonify({'error': f'認証完了エラー: {str(e)}'}), 500
 
 if __name__ == '__main__':
     # certsディレクトリが存在しない場合は作成

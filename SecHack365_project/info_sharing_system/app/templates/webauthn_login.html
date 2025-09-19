@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAuthnログイン - SecHack365 PHR</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        .login-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.3s;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .login-button:hover {
+            background: #0056b3;
+        }
+        .login-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .alternative-login {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .alternative-login a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .alternative-login a:hover {
+            text-decoration: underline;
+        }
+        .webauthn-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .instructions {
+            text-align: left;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="webauthn-icon">🔐</div>
+        <h1>WebAuthnログイン</h1>
+        
+        <div class="instructions">
+            <strong>パスワードレス認証:</strong> 生体認証やセキュリティキーを使用して安全にログインできます。
+        </div>
+        
+        <form id="webauthnLoginForm">
+            <div class="input-group">
+                <label for="username">ユーザー名:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <button type="submit" id="loginButton" class="login-button">
+                🔑 WebAuthnでログイン
+            </button>
+        </form>
+        
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+        
+        <div class="alternative-login">
+            <p>通常のログインをご希望の場合:</p>
+            <a href="{{ url_for('login') }}">パスワードでログイン</a>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: left;">
+            <h4 style="color: #495057; margin-top: 0; text-align: center;">デモアカウント（WebAuthn登録済み）</h4>
+            <div style="display: grid; gap: 15px;">
+                <div style="padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #007bff; cursor: pointer;" onclick="fillUsername('doctor1')">
+                    <div style="font-weight: bold; color: #333; margin-bottom: 4px;">doctor1</div>
+                    <div style="font-size: 14px; color: #666;">医師アカウント - WebAuthn認証器登録済み</div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 4px;">✓ WebAuthn対応</div>
+                </div>
+            </div>
+            <p style="font-size: 12px; color: #6c757d; margin-top: 15px; margin-bottom: 0; text-align: center;">
+                ※ WebAuthn認証器を登録していないユーザーはエラーになります
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        // SimpleWebAuthn browser ライブラリを使用（CDN経由）
+        import { startAuthentication } from 'https://unpkg.com/@simplewebauthn/browser@9.0.1/dist/bundle/index.js';
+
+        const loginForm = document.getElementById('webauthnLoginForm');
+        const loginButton = document.getElementById('loginButton');
+        const statusMessage = document.getElementById('statusMessage');
+        const usernameInput = document.getElementById('username');
+
+        // ユーザー名を入力する関数（グローバルスコープ）
+        window.fillUsername = function(username) {
+            usernameInput.value = username;
+        };
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = usernameInput.value.trim();
+            if (!username) {
+                showStatus('ユーザー名を入力してください', 'error');
+                return;
+            }
+
+            try {
+                loginButton.disabled = true;
+                loginButton.textContent = '認証中...';
+                showStatus('WebAuthn認証を開始しています...', 'info');
+
+                // サーバーから認証オプションを取得
+                const beginResponse = await fetch('/webauthn/login/begin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username: username }),
+                });
+
+                if (!beginResponse.ok) {
+                    const errorData = await beginResponse.json();
+                    throw new Error(errorData.error || '認証開始に失敗しました');
+                }
+
+                const authenticationOptions = await beginResponse.json();
+                
+                // WebAuthn認証を開始
+                showStatus('認証器での認証を行ってください...', 'info');
+                const authenticationResponse = await startAuthentication(authenticationOptions);
+
+                // サーバーで認証を完了
+                const completeResponse = await fetch('/webauthn/login/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        authenticationResponse: authenticationResponse,
+                        challenge: authenticationOptions.challenge
+                    }),
+                });
+
+                const result = await completeResponse.json();
+
+                if (result.success) {
+                    showStatus('✅ ' + result.message + ' リダイレクト中...', 'success');
+                    setTimeout(() => {
+                        window.location.href = result.redirect;
+                    }, 1000);
+                } else {
+                    throw new Error(result.error || '認証に失敗しました');
+                }
+
+            } catch (error) {
+                console.error('WebAuthn認証エラー:', error);
+                showStatus('❌ エラー: ' + error.message, 'error');
+                loginButton.disabled = false;
+                loginButton.textContent = '🔑 WebAuthnでログイン';
+            }
+        });
+    </script>
+</body>
+</html>

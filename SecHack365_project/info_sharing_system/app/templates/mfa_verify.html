@@ -103,7 +103,7 @@
         {% endif %}
         
         <form method="POST" action="{{ url_for("mfa_verify" ) }}">
-            <input type="text" name="mfa_code" placeholder="000000" maxlength="6" required id="mfa_code">
+            <input type="text" name="mfa_code" placeholder="6桁のTOTPコードまたは8桁のバックアップコード" maxlength="8" required id="mfa_code">
             <button type="submit">検証</button>
         </form>
         
