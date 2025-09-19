@@ -13,8 +13,17 @@ import os
 import json
 import pyotp  # TOTP（Time-based One-Time Password）ライブラリ
 import qrcode  # QRコード生成用（オプション）
-from io import BytesIO
+from webauthn import generate_registration_options, verify_registration_response, generate_authentication_options, verify_authentication_response
+from webauthn.helpers.structs import (
+    AuthenticatorSelectionCriteria, 
+    UserVerificationRequirement, 
+    RegistrationCredential, 
+    AuthenticationCredential,
+    AuthenticatorAttestationResponse,
+    AuthenticatorAssertionResponse
+)
 import base64
+from io import BytesIO
 
 class UserAuthenticator:
     """
@@ -36,6 +45,11 @@ class UserAuthenticator:
         """
         self.user_db_path = user_db_path
         self.users = self._load_users()
+        
+        # WebAuthn設定
+        self.rp_id = "localhost"  # Relying Party ID（本番環境では実際のドメイン）
+        self.rp_name = "SecHack365 PHR System"
+        self.origin = "https://localhost:5000"
 
     def _load_users(self):
         """
@@ -54,8 +68,13 @@ class UserAuthenticator:
         """
         ユーザーデータベースを保存する
         """
+        print(f"[DEBUG] 保存先パス: {self.user_db_path}")
+        print(f"[DEBUG] 保存前のusersデータ: {json.dumps(self.users, ensure_ascii=False, indent=2)}")
+        
         with open(self.user_db_path, 'w', encoding='utf-8') as f:
             json.dump(self.users, f, ensure_ascii=False, indent=4)
+        
+        print(f"[DEBUG] ファイル保存完了")
 
     def hash_password(self, password, salt=None):
         """
@@ -115,7 +134,9 @@ class UserAuthenticator:
             "mfa_secret": mfa_secret,
             "created_at": json.dumps({"timestamp": "auto-generated"}, default=str),
             "last_login": None,
-            "mfa_backup_codes": self._generate_backup_codes() if enable_mfa else None
+            "mfa_backup_codes": self._generate_backup_codes() if enable_mfa else None,
+            "webauthn_credentials": [],  # WebAuthn認証器情報
+            "webauthn_challenges": {}    # WebAuthnチャレンジ情報
         }
         self._save_users()
         
@@ -174,7 +195,12 @@ class UserAuthenticator:
         
         # バックアップコードの確認
         backup_codes = user_data.get("mfa_backup_codes", [])
-        if mfa_code in backup_codes:
+        print(f"[DEBUG] 入力されたMFAコード: '{mfa_code}' (型: {type(mfa_code)})")
+        print(f"[DEBUG] バックアップコード: {backup_codes}")
+        print(f"[DEBUG] バックアップコードの型: {[type(code) for code in backup_codes]}")
+        
+        # 文字列として比較
+        if str(mfa_code) in [str(code) for code in backup_codes]:
             # 使用されたバックアップコードを削除
             backup_codes.remove(mfa_code)
             self.users[username]["mfa_backup_codes"] = backup_codes
@@ -262,6 +288,325 @@ class UserAuthenticator:
             code = ''.join([str(os.urandom(1)[0] % 10) for _ in range(8)])
             backup_codes.append(code)
         return backup_codes
+    
+    # WebAuthn関連のメソッド
+    def generate_webauthn_registration_options(self, username):
+        """
+        WebAuthn認証器登録のためのオプションを生成
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            dict: 登録オプション（チャレンジ、ユーザー情報など）
+        """
+        user_data = self.users.get(username)
+        if not user_data:
+            return None
+            
+        # ユーザーIDをバイト形式で生成（既存のユーザーには一意なIDを割り当て）
+        user_id = hashlib.sha256(username.encode()).digest()[:32]
+        
+        try:
+            registration_options = generate_registration_options(
+                rp_id=self.rp_id,
+                rp_name=self.rp_name,
+                user_id=user_id,
+                user_name=username,
+                user_display_name=f"{username} ({user_data.get('role', 'user')})",
+                authenticator_selection=AuthenticatorSelectionCriteria(
+                    user_verification=UserVerificationRequirement.PREFERRED
+                )
+            )
+            
+            # チャレンジをセッション用に保存（実際の実装ではRedisやデータベースを使用）
+            if 'webauthn_challenges' not in user_data:
+                user_data['webauthn_challenges'] = {}
+            user_data['webauthn_challenges']['registration'] = base64.urlsafe_b64encode(registration_options.challenge).decode()
+            self._save_users()
+            
+            return {
+                'challenge': base64.urlsafe_b64encode(registration_options.challenge).decode(),
+                'rp': {
+                    'name': registration_options.rp.name,
+                    'id': registration_options.rp.id
+                },
+                'user': {
+                    'id': base64.urlsafe_b64encode(registration_options.user.id).decode(),
+                    'name': registration_options.user.name,
+                    'displayName': registration_options.user.display_name
+                },
+                'pubKeyCredParams': [{'alg': param.alg, 'type': param.type} for param in registration_options.pub_key_cred_params],
+                'timeout': registration_options.timeout,
+                'attestation': registration_options.attestation,
+                'authenticatorSelection': {
+                    'userVerification': registration_options.authenticator_selection.user_verification
+                }
+            }
+        except Exception as e:
+            print(f"WebAuthn登録オプション生成エラー: {e}")
+            return None
+    
+    def verify_webauthn_registration_response(self, username, registration_response, challenge):
+        """
+        WebAuthn認証器登録レスポンスを検証
+        
+        Args:
+            username (str): ユーザー名
+            registration_response (dict): フロントエンドからの登録レスポンス
+            challenge (str): 登録時のチャレンジ
+            
+        Returns:
+            tuple: (成功フラグ, メッセージ)
+        """
+        user_data = self.users.get(username)
+        if not user_data:
+            return False, "ユーザーが見つかりません"
+            
+        try:
+            # チャレンジの検証
+            stored_challenge = user_data.get('webauthn_challenges', {}).get('registration')
+            if not stored_challenge or stored_challenge != challenge:
+                return False, "無効なチャレンジです"
+            
+            # Base64パディングを修正する関数
+            def fix_base64_padding(data):
+                missing_padding = len(data) % 4
+                if missing_padding:
+                    data += '=' * (4 - missing_padding)
+                return data
+            
+            # RegistrationCredentialオブジェクトを作成
+            from webauthn.helpers.structs import AuthenticatorAttestationResponse
+            
+            attestation_response = AuthenticatorAttestationResponse(
+                client_data_json=base64.urlsafe_b64decode(fix_base64_padding(registration_response['response']['clientDataJSON'])),
+                attestation_object=base64.urlsafe_b64decode(fix_base64_padding(registration_response['response']['attestationObject']))
+            )
+            
+            credential = RegistrationCredential(
+                id=registration_response['id'],
+                raw_id=base64.urlsafe_b64decode(fix_base64_padding(registration_response['rawId'])),
+                response=attestation_response,
+                type=registration_response['type']
+            )
+            
+            # 登録レスポンスを検証
+            verification = verify_registration_response(
+                credential=credential,
+                expected_challenge=base64.urlsafe_b64decode(challenge),
+                expected_origin=self.origin,
+                expected_rp_id=self.rp_id
+            )
+            
+            # verification オブジェクトの属性を確認
+            print(f"[DEBUG] verification object attributes: {dir(verification)}")
+            print(f"[DEBUG] verification object: {verification}")
+            
+            # VerifiedRegistrationオブジェクトが返された場合、検証は成功
+            # エラーが発生した場合は例外がスローされる
+            if hasattr(verification, 'credential_id'):
+                print(f"[DEBUG] WebAuthn登録処理開始")
+                
+                # 認証器情報をユーザーデータに保存
+                if 'webauthn_credentials' not in user_data:
+                    user_data['webauthn_credentials'] = []
+                    print(f"[DEBUG] webauthn_credentials フィールドを初期化")
+                
+                credential_data = {
+                    'credential_id': base64.urlsafe_b64encode(verification.credential_id).decode(),
+                    'public_key': base64.urlsafe_b64encode(verification.credential_public_key).decode(),
+                    'sign_count': verification.sign_count,
+                    'created_at': json.dumps({"timestamp": "auto-generated"}, default=str)
+                }
+                
+                print(f"[DEBUG] credential_data作成: {credential_data}")
+                
+                user_data['webauthn_credentials'].append(credential_data)
+                print(f"[DEBUG] webauthn_credentials追加後: {len(user_data['webauthn_credentials'])}個")
+                
+                # チャレンジを削除
+                if 'webauthn_challenges' in user_data:
+                    user_data['webauthn_challenges'].pop('registration', None)
+                    print(f"[DEBUG] registrationチャレンジを削除")
+                
+                print(f"[DEBUG] _save_users()実行前")
+                self._save_users()
+                print(f"[DEBUG] _save_users()実行後")
+                
+                return True, "WebAuthn認証器の登録が成功しました"
+            else:
+                return False, "WebAuthn登録の検証に失敗しました"
+                
+        except Exception as e:
+            print(f"WebAuthn登録検証エラー: {e}")
+            return False, f"登録検証中にエラーが発生しました: {str(e)}"
+    
+    def generate_webauthn_authentication_options(self, username):
+        """
+        WebAuthn認証のためのオプションを生成
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            dict: 認証オプション（チャレンジ、許可される認証器など）
+        """
+        user_data = self.users.get(username)
+        if not user_data or not user_data.get('webauthn_credentials'):
+            return None
+            
+        try:
+            # 登録済み認証器のCredential IDを取得
+            allow_credentials = []
+            for cred in user_data['webauthn_credentials']:
+                allow_credentials.append({
+                    'type': 'public-key',
+                    'id': cred['credential_id']
+                })
+            
+            authentication_options = generate_authentication_options(
+                rp_id=self.rp_id,
+                allow_credentials=[
+                    {'type': 'public-key', 'id': base64.urlsafe_b64decode(cred['credential_id'])}
+                    for cred in user_data['webauthn_credentials']
+                ],
+                user_verification=UserVerificationRequirement.PREFERRED
+            )
+            
+            # チャレンジをセッション用に保存
+            if 'webauthn_challenges' not in user_data:
+                user_data['webauthn_challenges'] = {}
+            user_data['webauthn_challenges']['authentication'] = base64.urlsafe_b64encode(authentication_options.challenge).decode()
+            self._save_users()
+            
+            return {
+                'challenge': base64.urlsafe_b64encode(authentication_options.challenge).decode(),
+                'timeout': authentication_options.timeout,
+                'rpId': authentication_options.rp_id,
+                'allowCredentials': [
+                    {
+                        'type': 'public-key',
+                        'id': cred['credential_id']
+                    } for cred in user_data['webauthn_credentials']
+                ],
+                'userVerification': authentication_options.user_verification
+            }
+            
+        except Exception as e:
+            print(f"WebAuthn認証オプション生成エラー: {e}")
+            return None
+    
+    def verify_webauthn_authentication_response(self, username, authentication_response, challenge):
+        """
+        WebAuthn認証レスポンスを検証
+        
+        Args:
+            username (str): ユーザー名
+            authentication_response (dict): フロントエンドからの認証レスポンス
+            challenge (str): 認証時のチャレンジ
+            
+        Returns:
+            tuple: (成功フラグ, メッセージ)
+        """
+        user_data = self.users.get(username)
+        if not user_data or not user_data.get('webauthn_credentials'):
+            return False, "WebAuthn認証器が登録されていません"
+            
+        try:
+            # チャレンジの検証
+            stored_challenge = user_data.get('webauthn_challenges', {}).get('authentication')
+            if not stored_challenge or stored_challenge != challenge:
+                return False, "無効なチャレンジです"
+            
+            # 使用された認証器を特定
+            credential_id = authentication_response['rawId']
+            print(f"[DEBUG] 認証で使用されたcredential_id: {credential_id}")
+            print(f"[DEBUG] 登録済みのcredential_ids: {[cred['credential_id'] for cred in user_data['webauthn_credentials']]}")
+            
+            # Base64パディングを正規化する関数
+            def normalize_base64(data):
+                # パディングを追加
+                missing_padding = len(data) % 4
+                if missing_padding:
+                    data += '=' * (4 - missing_padding)
+                return data
+            
+            # credential_idを正規化
+            normalized_credential_id = normalize_base64(credential_id)
+            print(f"[DEBUG] 正規化されたcredential_id: {normalized_credential_id}")
+            
+            matching_credential = None
+            for cred in user_data['webauthn_credentials']:
+                if cred['credential_id'] == normalized_credential_id:
+                    matching_credential = cred
+                    break
+            
+            if not matching_credential:
+                print(f"[DEBUG] 認証器が見つかりません - 使用されたID: {credential_id}")
+                return False, "認証器が見つかりません"
+            
+            print(f"[DEBUG] マッチした認証器: {matching_credential}")
+            
+            # Base64パディングを修正する関数
+            def fix_base64_padding(data):
+                missing_padding = len(data) % 4
+                if missing_padding:
+                    data += '=' * (4 - missing_padding)
+                return data
+            
+            # AuthenticationCredentialオブジェクトを作成
+            from webauthn.helpers.structs import AuthenticatorAssertionResponse
+            
+            assertion_response = AuthenticatorAssertionResponse(
+                client_data_json=base64.urlsafe_b64decode(fix_base64_padding(authentication_response['response']['clientDataJSON'])),
+                authenticator_data=base64.urlsafe_b64decode(fix_base64_padding(authentication_response['response']['authenticatorData'])),
+                signature=base64.urlsafe_b64decode(fix_base64_padding(authentication_response['response']['signature']))
+            )
+            
+            credential = AuthenticationCredential(
+                id=authentication_response['id'],
+                raw_id=base64.urlsafe_b64decode(fix_base64_padding(authentication_response['rawId'])),
+                response=assertion_response,
+                type=authentication_response['type']
+            )
+            
+            # 認証レスポンスを検証
+            verification = verify_authentication_response(
+                credential=credential,
+                expected_challenge=base64.urlsafe_b64decode(challenge),
+                expected_origin=self.origin,
+                expected_rp_id=self.rp_id,
+                credential_public_key=base64.urlsafe_b64decode(matching_credential['public_key']),
+                credential_current_sign_count=matching_credential['sign_count']
+            )
+            
+            # verification オブジェクトの属性を確認
+            print(f"[DEBUG] auth verification object attributes: {dir(verification)}")
+            print(f"[DEBUG] auth verification object: {verification}")
+            
+            # VerifiedAuthenticationオブジェクトが返された場合、検証は成功
+            # エラーが発生した場合は例外がスローされる
+            if hasattr(verification, 'new_sign_count'):
+                # サインカウントを更新
+                new_sign_count = getattr(verification, 'new_sign_count', matching_credential['sign_count'])
+                matching_credential['sign_count'] = new_sign_count
+                
+                # チャレンジを削除
+                if 'webauthn_challenges' in user_data:
+                    user_data['webauthn_challenges'].pop('authentication', None)
+                
+                # 最終ログイン時刻を更新
+                user_data['last_login'] = json.dumps({"timestamp": "auto-generated"}, default=str)
+                
+                self._save_users()
+                return True, "WebAuthn認証が成功しました"
+            else:
+                return False, "WebAuthn認証の検証に失敗しました"
+                
+        except Exception as e:
+            print(f"WebAuthn認証検証エラー: {e}")
+            return False, f"認証検証中にエラーが発生しました: {str(e)}"
     
     def get_user_info(self, username):
         """
