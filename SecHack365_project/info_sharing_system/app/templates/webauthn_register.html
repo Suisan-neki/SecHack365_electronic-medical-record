@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAuthn認証器登録 - SecHack365 PHR</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .register-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .user-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+        .register-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.3s;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .register-button:hover {
+            background: #0056b3;
+        }
+        .register-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .webauthn-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .instructions {
+            text-align: left;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .instructions h3 {
+            color: #495057;
+            margin-top: 0;
+        }
+        .instructions ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 8px 0;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="webauthn-icon">🔐</div>
+        <h1>WebAuthn認証器登録</h1>
+        
+        <div class="user-info">
+            <strong>ユーザー:</strong> {{ username }}
+        </div>
+        
+        <div class="instructions">
+            <h3>登録手順:</h3>
+            <ul>
+                <li>「認証器を登録」ボタンをクリック</li>
+                <li>ブラウザの指示に従って認証器を選択</li>
+                <li>指紋認証、顔認証、またはセキュリティキーを使用</li>
+                <li>登録完了後、パスワードレスログインが可能になります</li>
+            </ul>
+        </div>
+        
+        <button id="registerButton" class="register-button">
+            🔑 認証器を登録
+        </button>
+        
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+        
+        <a href="{{ url_for('index') }}" class="back-link">← ダッシュボードに戻る</a>
+    </div>
+
+    <script type="module">
+        // SimpleWebAuthn browser ライブラリを使用（CDN経由）
+        import { startRegistration } from 'https://unpkg.com/@simplewebauthn/browser@9.0.1/dist/bundle/index.js';
+
+        const registerButton = document.getElementById('registerButton');
+        const statusMessage = document.getElementById('statusMessage');
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+        }
+
+        registerButton.addEventListener('click', async () => {
+            try {
+                registerButton.disabled = true;
+                registerButton.textContent = '登録中...';
+                showStatus('認証器の登録を開始しています...', 'info');
+
+                // サーバーから登録オプションを取得
+                const beginResponse = await fetch('/webauthn/register/begin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!beginResponse.ok) {
+                    const errorData = await beginResponse.json();
+                    throw new Error(errorData.error || '登録開始に失敗しました');
+                }
+
+                const registrationOptions = await beginResponse.json();
+                
+                // WebAuthn登録を開始
+                showStatus('認証器での認証を行ってください...', 'info');
+                const registrationResponse = await startRegistration(registrationOptions);
+
+                // サーバーで登録を完了
+                const completeResponse = await fetch('/webauthn/register/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        registrationResponse: registrationResponse,
+                        challenge: registrationOptions.challenge
+                    }),
+                });
+
+                const result = await completeResponse.json();
+
+                if (result.success) {
+                    showStatus('✅ ' + result.message + ' パスワードレスログインが利用可能になりました！', 'success');
+                    registerButton.textContent = '登録完了';
+                } else {
+                    throw new Error(result.error || '登録の完了に失敗しました');
+                }
+
+            } catch (error) {
+                console.error('WebAuthn登録エラー:', error);
+                showStatus('❌ エラー: ' + error.message, 'error');
+                registerButton.disabled = false;
+                registerButton.textContent = '🔑 認証器を登録';
+            }
+        });
+    </script>
+</body>
+</html>

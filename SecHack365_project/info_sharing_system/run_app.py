@@ -10,11 +10,11 @@ import sys
 
 # プロジェクトルートを確認（モノレポ対応）
 project_root = os.path.dirname(os.path.abspath(__file__))
-monorepo_root = os.path.dirname(os.path.dirname(project_root))
+monorepo_root = os.path.dirname(project_root)  # SecHack365_project
 
 # パスを設定
 sys.path.insert(0, project_root)
-sys.path.insert(0, monorepo_root)
+sys.path.insert(0, monorepo_root)  # coreモジュールが含まれるディレクトリ
 
 # アプリケーションをインポートして実行
 from app.app import app
