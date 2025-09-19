@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFA認証 - 患者情報共有システム</title>
+    <link rel="stylesheet" href="{{ url_for("static", filename="style.css") }}">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .mfa-container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .mfa-container h1 {
+            color: #0056b3;
+            margin-bottom: 30px;
+        }
+        .mfa-container input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            text-align: center;
+            letter-spacing: 4px;
+        }
+        .mfa-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .mfa-container button:hover {
+            background-color: #0056b3;
+        }
+        .error-message {
+            color: red;
+            margin-top: 15px;
+        }
+        .qr-code {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .qr-code img {
+            max-width: 100%;
+            height: auto;
+        }
+        .demo-info {
+            background: #fffbeb;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        .demo-info h4 {
+            color: #92400e;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .demo-info p {
+            color: #a16207;
+            font-size: 0.8em;
+            margin: 0;
+        }
+        .current-code {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #059669;
+            background: #d1fae5;
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="mfa-container">
+        <h1>MFA認証</h1>
+        {% if qr_code_url %}
+            <p>認証アプリで以下のQRコードをスキャンしてください。</p>
+            <div class="qr-code">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qr_code_url }}" alt="QR Code">
+            </div>
+        {% endif %}
+        
+        <form method="POST" action="{{ url_for("mfa_verify" ) }}">
+            <input type="text" name="mfa_code" placeholder="000000" maxlength="6" required id="mfa_code">
+            <button type="submit">検証</button>
+        </form>
+        
+        {% if error %}
+            <p class="error-message">{{ error }}</p>
+        {% endif %}
+        
+        <div class="demo-info">
+            <h4>デモ用情報</h4>
+            <p>現在の有効なTOTPコード:</p>
+            <div class="current-code" id="current-code">生成中...</div>
+            <p>※ 実際の運用では表示されません</p>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <a href="{{ url_for('login') }}" style="color: #007bff; text-decoration: none;">← ログイン画面に戻る</a>
+        </div>
+    </div>
+
+    <script>
+        // デモ用のTOTPコード表示（実際のMFAシークレットから生成）
+        function updateDemoCode() {
+            // 簡易的なデモコード生成（実際にはサーバーから取得）
+            const now = Math.floor(Date.now() / 1000);
+            const timeStep = Math.floor(now / 30);
+            const code = String(timeStep % 1000000).padStart(6, '0');
+            document.getElementById('current-code').textContent = code;
+        }
+        
+        // 初回表示とタイマー設定
+        updateDemoCode();
+        setInterval(updateDemoCode, 1000);
+        
+        // MFAコード入力時の自動フォーマット
+        document.getElementById('mfa_code').addEventListener('input', function(e) {
+            const value = e.target.value.replace(/\D/g, ''); // 数字のみ
+            e.target.value = value;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - 患者情報共有システム</title>
+    <link rel="stylesheet" href="{{ url_for("static", filename="style.css") }}">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .login-container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-container h1 {
+            color: #0056b3;
+            margin-bottom: 30px;
+        }
+        .login-container input[type="text"],
+        .login-container input[type="password"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .login-container button:hover {
+            background-color: #0056b3;
+        }
+        .error-message {
+            color: red;
+            margin-top: 15px;
+        }
+        .demo-accounts {
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+        .demo-accounts h3 {
+            color: #4a5568;
+            font-size: 1em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .demo-account {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+        }
+        .demo-account:last-child {
+            border-bottom: none;
+        }
+        .demo-account:hover {
+            background-color: #f0f8ff;
+        }
+        .demo-account-info {
+            font-size: 0.9em;
+        }
+        .demo-account-role {
+            color: #718096;
+            font-size: 0.8em;
+        }
+        .demo-account-mfa {
+            font-size: 0.75em;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e6fffa;
+            color: #234e52;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>ログイン</h1>
+        <form method="POST" action="{{ url_for("login") }}">
+            <input type="text" name="username" placeholder="ユーザー名" required id="username">
+            <input type="password" name="password" placeholder="パスワード" required id="password">
+            <button type="submit">ログイン</button>
+        </form>
+        {% if error %}
+            <p class="error-message">{{ error }}</p>
+        {% endif %}
+        
+        <div class="demo-accounts">
+            <h3>デモアカウント</h3>
+            <div class="demo-account" onclick="fillLogin('doctor1', 'secure_pass_doc')">
+                <div class="demo-account-info">
+                    <strong>doctor1</strong> / secure_pass_doc<br>
+                    <span class="demo-account-role">医師アカウント</span>
+                </div>
+                <span class="demo-account-mfa">MFA有効</span>
+            </div>
+            <div class="demo-account" onclick="fillLogin('nurse1', 'secure_pass_nurse')">
+                <div class="demo-account-info">
+                    <strong>nurse1</strong> / secure_pass_nurse<br>
+                    <span class="demo-account-role">看護師アカウント</span>
+                </div>
+                <span class="demo-account-mfa">MFA無効</span>
+            </div>
+            <div class="demo-account" onclick="fillLogin('patient1', 'secure_pass_pat')">
+                <div class="demo-account-info">
+                    <strong>patient1</strong> / secure_pass_pat<br>
+                    <span class="demo-account-role">患者アカウント</span>
+                </div>
+                <span class="demo-account-mfa">MFA無効</span>
+            </div>
+            <div class="demo-account" onclick="fillLogin('admin1', 'secure_pass_admin')">
+                <div class="demo-account-info">
+                    <strong>admin1</strong> / secure_pass_admin<br>
+                    <span class="demo-account-role">管理者アカウント</span>
+                </div>
+                <span class="demo-account-mfa">MFA無効</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function fillLogin(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+        }
+    </script>
+</body>
+</html>

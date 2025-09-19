@@ -1,0 +1,401 @@
+{
+  "resourceType": "Bundle",
+  "id": "patient-p001-records",
+  "type": "collection",
+  "timestamp": "2025-09-15T10:30:00+09:00",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "P001",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.392.200119.4.410.1",
+            "value": "P001"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "山下",
+            "given": ["真凜"]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "2003-07-25",
+        "address": [
+          {
+            "use": "home",
+            "postalCode": "100-0001",
+            "country": "JP",
+            "state": "東京都",
+            "city": "千代田区"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "090-1234-5678",
+            "use": "mobile"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "condition-001",
+        "subject": {
+          "reference": "Patient/P001"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10",
+              "code": "I10",
+              "display": "Essential (primary) hypertension"
+            }
+          ],
+          "text": "本態性高血圧症"
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "onsetDateTime": "2025-01-15",
+        "recordedDate": "2025-01-15T09:30:00+09:00"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "condition-002",
+        "subject": {
+          "reference": "Patient/P001"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10",
+              "code": "E78.0",
+              "display": "Pure hypercholesterolemia"
+            }
+          ],
+          "text": "高コレステロール血症"
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "onsetDateTime": "2025-02-10",
+        "recordedDate": "2025-02-10T14:15:00+09:00"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "medication-001",
+        "subject": {
+          "reference": "Patient/P001"
+        },
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "urn:oid:1.2.392.200119.4.403.1",
+              "code": "105271807",
+              "display": "アムロジピンベシル酸塩錠5mg"
+            }
+          ],
+          "text": "アムロジピン錠 5mg（高血圧治療薬）"
+        },
+        "status": "active",
+        "effectiveDateTime": "2025-01-20",
+        "dosage": [
+          {
+            "text": "1日1回、朝食後に1錠服用",
+            "timing": {
+              "repeat": {
+                "frequency": 1,
+                "period": 1,
+                "periodUnit": "d"
+              }
+            },
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 1,
+                  "unit": "錠",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "{tablet}"
+                }
+              }
+            ]
+          }
+        ],
+        "note": [
+          {
+            "text": "血圧コントロールのため継続服用中。副作用なし。"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "medication-002",
+        "subject": {
+          "reference": "Patient/P001"
+        },
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "urn:oid:1.2.392.200119.4.403.1",
+              "code": "105271901",
+              "display": "アトルバスタチンカルシウム錠10mg"
+            }
+          ],
+          "text": "アトルバスタチン錠 10mg（コレステロール降下薬）"
+        },
+        "status": "active",
+        "effectiveDateTime": "2025-02-15",
+        "dosage": [
+          {
+            "text": "1日1回、夕食後に1錠服用",
+            "timing": {
+              "repeat": {
+                "frequency": 1,
+                "period": 1,
+                "periodUnit": "d"
+              }
+            },
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 1,
+                  "unit": "錠",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "{tablet}"
+                }
+              }
+            ]
+          }
+        ],
+        "note": [
+          {
+            "text": "LDLコレステロール値改善のため処方。定期的な肝機能検査を実施中。"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "observation-bp-001",
+        "subject": {
+          "reference": "Patient/P001"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "85354-9",
+              "display": "Blood pressure panel with all children optional"
+            }
+          ],
+          "text": "血圧測定"
+        },
+        "status": "final",
+        "effectiveDateTime": "2025-09-01T10:15:00+09:00",
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8480-6",
+                  "display": "Systolic blood pressure"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "value": 130,
+              "unit": "mmHg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8462-4",
+                  "display": "Diastolic blood pressure"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "value": 85,
+              "unit": "mmHg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          }
+        ],
+        "note": [
+          {
+            "text": "服薬コンプライアンス良好。前回より5mmHg改善。"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "observation-cholesterol-001",
+        "subject": {
+          "reference": "Patient/P001"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "57698-3",
+              "display": "Lipid panel with direct LDL - Serum or Plasma"
+            }
+          ],
+          "text": "脂質検査"
+        },
+        "status": "final",
+        "effectiveDateTime": "2025-09-01T10:30:00+09:00",
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "18262-6",
+                  "display": "Cholesterol.LDL [Mass/Vol] in Serum or Plasma"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "value": 120,
+              "unit": "mg/dL",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg/dL"
+            },
+            "referenceRange": [
+              {
+                "low": {
+                  "value": 0,
+                  "unit": "mg/dL"
+                },
+                "high": {
+                  "value": 140,
+                  "unit": "mg/dL"
+                },
+                "text": "正常範囲"
+              }
+            ]
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "2085-9",
+                  "display": "Cholesterol.HDL [Mass/Vol] in Serum or Plasma"
+                }
+              ]
+            },
+            "valueQuantity": {
+              "value": 50,
+              "unit": "mg/dL",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg/dL"
+            },
+            "referenceRange": [
+              {
+                "low": {
+                  "value": 40,
+                  "unit": "mg/dL"
+                },
+                "high": {
+                  "value": 999,
+                  "unit": "mg/dL"
+                },
+                "text": "正常範囲"
+              }
+            ]
+          }
+        ],
+        "note": [
+          {
+            "text": "スタチン系薬剤による治療効果が認められる。目標値内にコントロール良好。"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "encounter-001",
+        "subject": {
+          "reference": "Patient/P001"
+        },
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "185349003",
+                "display": "Encounter for check up"
+              }
+            ],
+            "text": "定期診察"
+          }
+        ],
+        "period": {
+          "start": "2025-09-01T10:00:00+09:00",
+          "end": "2025-09-01T10:45:00+09:00"
+        },
+        "reasonCode": [
+          {
+            "text": "高血圧・高コレステロール血症の定期フォローアップ"
+          }
+        ],
+        "diagnosis": [
+          {
+            "condition": {
+              "reference": "Condition/condition-001"
+            },
+            "use": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/diagnosis-role",
+                  "code": "CC",
+                  "display": "Chief complaint"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

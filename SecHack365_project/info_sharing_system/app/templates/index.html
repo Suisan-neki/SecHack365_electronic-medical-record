@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>診療ディスプレイ</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div id="private-view">
+        <div class="user-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+            <div class="user-info">
+                <h2 style="margin: 0; color: #2d3748;">医療DXシステム</h2>
+                {% if current_user.is_authenticated %}
+                <p style="margin: 5px 0 0 0; color: #718096;">
+                    ログイン中: <strong>{{ current_user.id }}</strong> 
+                    ({{ current_user.role }})
+                    {% if current_user.mfa_enabled %}
+                    <span style="background: #c6f6d5; color: #2f855a; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 8px;">MFA有効</span>
+                    {% endif %}
+                </p>
+                {% else %}
+                <p style="margin: 5px 0 0 0; color: #718096;">
+                    ログインが必要です
+                </p>
+                {% endif %}
+            </div>
+            <div class="user-actions">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('logout') }}" style="background: #e53e3e; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em;">ログアウト</a>
+                {% else %}
+                <a href="{{ url_for('login') }}" style="background: #007bff; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em;">ログイン</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <h1>🩺 医師向けプライベートビュー</h1>
+        
+        <!-- デバッグ情報 -->
+        <div style="background: #f0f8ff; border: 1px solid #bee3f8; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 10px 0; color: #2b6cb0;">認証状態（デバッグ情報）</h3>
+            <p style="margin: 5px 0; color: #2c5282;">
+                <strong>認証状態:</strong> 
+                {% if current_user.is_authenticated %}
+                    ✅ ログイン済み
+                {% else %}
+                    ❌ 未ログイン
+                {% endif %}
+            </p>
+            {% if current_user.is_authenticated %}
+            <p style="margin: 5px 0; color: #2c5282;">
+                <strong>ユーザーID:</strong> {{ current_user.id }}<br>
+                <strong>役割:</strong> {{ current_user.role }}
+            </p>
+            {% endif %}
+        </div>
+        
+        <!-- 古い認証フォームは新しいログインシステムに置き換えられました -->
+        <div id="auth-section" style="display: none;">
+            <!-- 非表示: 新しいFlask-Loginシステムを使用 -->
+        </div>
+        
+        <!-- 古いヘッダーは削除（上の新しいヘッダーを使用） -->
+        
+        <div id="controls-section" style="display:block;">
+            <!-- 【最重要】現在の診察患者情報 - 大サイズ -->
+            <div class="patient-card priority-high">
+                <div class="card-header">
+                    <h2>🏥 現在の診察患者</h2>
+                    <div class="patient-status">電子カルテから抽出待機中</div>
+                </div>
+                <div class="patient-details">
+                    <div class="patient-detail-item">
+                        <span class="detail-label">患者名</span>
+                        <span class="detail-value" id="doctor-patient-name">電子カルテから情報を抽出してください</span>
+                    </div>
+                    <div class="patient-detail-item">
+                        <span class="detail-label">年齢・性別</span>
+                        <span class="detail-value">
+                            <span id="doctor-patient-age">-</span> / <span id="doctor-patient-gender">-</span>
+                        </span>
+                    </div>
+                    <div class="patient-detail-item">
+                        <span class="detail-label">患者ID</span>
+                        <span class="detail-value" id="doctor-patient-id">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 【重要】主要操作ボタン - 横並び3つ -->
+            <div class="action-buttons priority-high">
+                <div class="button-row">
+                    <button onclick="loadPatientData()" class="primary-action-button" id="load-data-btn" 
+                            style="display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; text-align: center !important;">
+                        <span class="button-icon" style="text-align: center !important;">📤</span>
+                        <span class="button-text" style="text-align: center !important; width: 100% !important;">
+                            <strong>患者情報を抽出</strong>
+                            <small>電子カルテシステムから現在の患者データを取得</small>
+                        </span>
+                    </button>
+                    <button onclick="showRawEHRData()" class="primary-action-button disabled" id="raw-data-btn" disabled
+                            style="display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; text-align: center !important;">
+                        <span class="button-icon" style="text-align: center !important;">🗃️</span>
+                        <span class="button-text" style="text-align: center !important; width: 100% !important;">
+                            <strong>生データ確認</strong>
+                            <small>元システムの生データを確認</small>
+                        </span>
+                    </button>
+                    <button onclick="switchView('patient')" class="primary-action-button disabled" id="patient-view-btn" disabled
+                            style="display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; text-align: center !important;">
+                        <span class="button-icon" style="text-align: center !important;">👤</span>
+                        <span class="button-text" style="text-align: center !important; width: 100% !important;">
+                            <strong>患者向けディスプレイに表示</strong>
+                            <small>患者が理解しやすい形式で情報を表示</small>
+                        </span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 【中重要】EHR接続状態 - 中サイズ -->
+            <div class="ehr-connection-status priority-medium">
+                <h4>🔗 電子カルテシステム接続</h4>
+                <div class="connection-info">
+                    <div class="connection-indicator">
+                        <span class="status-dot connected"></span>
+                        <span>FHIR標準型電子カルテシステムに接続中</span>
+                    </div>
+                    <div class="current-session">
+                        <strong>現在の診察セッション:</strong> 外来診察室A - 2025年9月15日 15:30
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 【低重要】操作履歴 - 小サイズ -->
+            <div class="activity-feed priority-low">
+                <h5>📝 最近の操作</h5>
+                <div id="operation-history"></div>
+            </div>
+            
+            
+            <!-- 【低重要】セキュリティ検証 - 小サイズ -->
+            <div class="security-verification-section priority-low">
+                <h5>🔐 セキュリティ検証</h5>
+                <p>システムの暗号化通信・電子署名・データ完全性を検証します</p>
+                <button onclick="openSecurityVerificationPage()" class="security-button">🔒 セキュリティ検証ページを開く</button>
+            </div>
+        </div>
+    </div>
+    <!-- 患者向けメニュー画面 -->
+    <div id="patient-view" style="display:none;" class="fade-in patient-display-7inch">
+        <div class="patient-header">
+            <h1>診療情報</h1>
+            <h2 id="patient-name"></h2>
+        </div>
+        
+        <div class="medical-menu">
+            <div class="menu-item" onclick="showMedicalDetail('conditions')">
+                <h3>現在の病気・症状</h3>
+                <p>診断された病気や症状を確認</p>
+            </div>
+            
+            <div class="menu-item" onclick="showMedicalDetail('medications')">
+                <h3>処方薬</h3>
+                <p>現在処方されている薬の情報</p>
+            </div>
+            
+            <div class="menu-item" onclick="showMedicalDetail('tests')">
+                <h3>検査結果</h3>
+                <p>最新の検査結果と数値</p>
+            </div>
+        </div>
+        
+        <div class="security-footer">
+            <p>この情報は暗号化により保護されています</p>
+        </div>
+        
+        <button onclick="switchView('private')" class="back-button">画面に戻る</button>
+    </div>
+
+    <!-- 個別詳細画面 -->
+    <div id="medical-detail-view" style="display:none;" class="fade-in patient-display-7inch">
+        <div class="detail-header">
+            <button onclick="backToMenu()" class="back-to-menu-btn">← メニューに戻る</button>
+            <h1 id="detail-title"></h1>
+            <h2 id="detail-patient-name"></h2>
+        </div>
+        
+        <div class="detail-content">
+            <!-- 病気・症状 -->
+            <div id="conditions-detail" class="detail-section" style="display:none;">
+                <div id="conditions-list"></div>
+            </div>
+            
+            <!-- 処方薬 -->
+            <div id="medications-detail" class="detail-section" style="display:none;">
+                <ul id="medications"></ul>
+            </div>
+            
+            <!-- 検査結果 -->
+            <div id="tests-detail" class="detail-section" style="display:none;">
+                <div id="test-results"></div>
+            </div>
+        </div>
+        
+        <div class="security-footer">
+            <p>この情報は暗号化により保護されています</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script_new.js') }}"></script>
+</body>
+</html>

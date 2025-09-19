@@ -1,0 +1,5 @@
+Flask
+cryptography
+pyotp
+qrcode[pil]
+Flask-Login
