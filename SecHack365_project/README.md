@@ -1,40 +1,39 @@
-# SecHack365 患者中心の医療DXプロジェクト（モノレポ版）
+# SecHack365 医療情報共有システム
 
-## 🏗️ プロジェクト構造
+患者の医療情報アクセス権を技術で保障し、医療従事者との協働を促進するシステムです。
 
-このプロジェクトは、患者の「知る権利」を技術的に保障し、医療従事者との協働を促進する次世代の診療体験を創出するモノレポ構成のシステムです。
+## プロジェクト構造
 
 ```
 SecHack365_project/
-├── 📁 info_sharing_system/      # 患者向け情報共有システム
+├── info_sharing_system/         # 患者向け情報共有システム
 │   ├── app/
 │   │   ├── app.py              # Flaskアプリケーション
 │   │   ├── templates/          # HTMLテンプレート
 │   │   ├── static/             # CSS/JavaScript
-│   │   ├── certs/              # SSL証明書（自動生成）
-│   │   └── *.json              # デモデータ
+│   │   └── certs/              # SSL証明書
 │   └── run_app.py              # 起動スクリプト
 │
-├── 📁 ehr_system/               # 院内電子カルテシステム（今後開発）
-│   └── app/                    # 将来の拡張用
+├── ehr_system/                  # 電子カルテシステム（開発予定）
+│   └── app/
 │
-├── 📁 core/                     # 共通コアモジュール
-│   ├── authorization.py        # 認可トークン管理
-│   ├── digital_signature.py    # 電子署名機能
-│   ├── hash_chain.py          # ハッシュチェーン機能
-│   ├── permissions.py         # 権限制御システム
-│   └── ehr_translator.py      # 電子カルテ翻訳機能
+├── core/                        # 共通モジュール
+│   ├── authentication.py       # 認証機能
+│   ├── authorization.py        # 認可機能
+│   ├── digital_signature.py    # 電子署名
+│   ├── hash_chain.py           # ハッシュチェーン
+│   └── ehr_translator.py       # データ翻訳
 │
-├── 📁 scripts/                  # 開発支援スクリプト
-│   └── generate_cert.py        # SSL証明書生成ツール
+├── scripts/
+│   └── generate_cert.py        # SSL証明書生成
 │
-├── requirements.txt            # Python依存関係
-└── README.md                   # このファイル
+├── requirements.txt
+└── README.md
 ```
 
-## 🚀 クイックスタート
+## セットアップ
 
-### 1. 環境準備
+### 環境準備
 
 ```bash
 # リポジトリのクローン
@@ -54,7 +53,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. 情報共有システムの起動
+### アプリケーションの起動
 
 ```bash
 # 情報共有システムディレクトリに移動
@@ -64,50 +63,38 @@ cd info_sharing_system
 python run_app.py
 ```
 
-### 3. ブラウザでアクセス
+### アクセス
 
 - URL: https://localhost:5000
 - 自己署名証明書の警告が表示された場合は「詳細設定」→「localhost に進む」を選択
 
-## 🔐 セキュリティ機能
+## 機能
 
-### 実装済みセキュリティ基盤
+### セキュリティ機能
 
-- **HTTPS通信**: TLS暗号化による通信保護
-- **電子署名**: RSA-PSS方式による医療データの真正性保証  
-- **ハッシュチェーン**: SHA-256による操作履歴とデータ完全性の証明
-- **認可システム**: 役割ベースアクセス制御（医師・看護師・管理者）
-- **自動SSL証明書生成**: 開発用自己署名証明書の自動生成
+- HTTPS通信（TLS暗号化）
+- 電子署名（RSA-PSS + SHA-256）
+- ハッシュチェーン（SHA-256ベース）
+- 認証・認可システム（RBAC/ABAC）
+- 多要素認証（TOTP）
+- WebAuthn（FIDO2）対応
 
-### セキュリティ検証
+### 主要機能
 
-アプリケーション内の「セキュリティ検証ページ」で以下を確認できます：
+- 医療情報の平易化（FHIR → 患者向け日本語）
+- 視覚的な情報表示
+- 権限管理（職種別アクセス制御）
+- 操作履歴の記録
+- EHRシステム連携
 
-- HTTPS通信の暗号化状態
-- 電子署名の生成・検証結果
-- ハッシュチェーンの完全性
-- 認可トークンの有効性
-
-## 🎯 主要機能
-
-### 患者向け機能
-- **医療情報の平易化**: FHIR標準データを患者が理解しやすい日本語に自動翻訳
-- **視覚的な情報表示**: アイコンや色分けを使った直感的なUI
-- **詳細な説明提供**: 病気や薬について分かりやすい説明を表示
-
-### 医療従事者向け機能  
-- **権限管理**: 職種に応じた機能制限
-- **操作履歴**: 全ての医療行為をハッシュチェーンで記録
-- **EHRシステム連携**: 既存の電子カルテシステムからのデータ抽出
-
-## 🛠️ 開発情報
+## 技術情報
 
 ### 技術スタック
 
-- **バックエンド**: Python 3.9+, Flask
-- **フロントエンド**: HTML5, CSS3, JavaScript (Vanilla)
-- **セキュリティ**: cryptography library, HTTPS/TLS
-- **データ形式**: FHIR標準準拠JSON
+- バックエンド: Python 3.9+, Flask
+- フロントエンド: HTML5, CSS3, JavaScript
+- セキュリティ: cryptography, WebAuthn
+- データ形式: FHIR準拠JSON
 
 ### 開発用コマンド
 
@@ -123,58 +110,24 @@ cd info_sharing_system
 python run_app.py
 ```
 
-## 🔄 今後の開発予定
+## 今後の開発予定
 
-### Phase 1: セキュリティ強化（進行中）
-- [ ] JWT ベースの本格的な認証システム
-- [ ] リフレッシュトークン機能
-- [ ] API セキュリティ強化（Rate limiting, CORS設定）
-- [ ] 監査ログの体系化
+- 院内電子カルテシステムの実装
+- システム間連携API
+- 監査ログの体系化
+- パフォーマンス監視
 
-### Phase 2: EHRシステム開発
-- [ ] 院内電子カルテシステムの実装
-- [ ] システム間連携API
-- [ ] データ同期機能
+## トラブルシューティング
 
-### Phase 3: 運用機能強化
-- [ ] ログ分析機能
-- [ ] パフォーマンス監視
-- [ ] コンプライアンス対応
-
-## 📞 サポート
-
-### トラブルシューティング
-
-**SSL証明書エラー**
+### SSL証明書エラー
 ```bash
-# 証明書を再生成
 python scripts/generate_cert.py --cert-dir info_sharing_system/app/certs
 ```
 
-**依存関係エラー**
+### 依存関係エラー
 ```bash
-# 依存関係を再インストール
 pip install -r requirements.txt --force-reinstall
 ```
 
-**ポートエラー（5000番ポートが使用中）**
-- 他のアプリケーションを停止するか、`run_app.py`内のポート番号を変更してください
-
-### 開発環境の確認
-
-```bash
-# Python バージョン確認
-python --version
-
-# 必要パッケージの確認
-pip list | grep -E "(Flask|cryptography)"
-
-# 仮想環境の確認
-which python  # macOS/Linux
-where python  # Windows
-```
-
----
-
-**SecHack365 患者中心の医療DXプロジェクト**  
-患者の医療情報アクセス権を技術で保障し、医療DXを推進します。
+### ポートエラー
+5000番ポートが使用中の場合は、他のアプリケーションを停止するか、`run_app.py`内のポート番号を変更してください。
