@@ -11,36 +11,68 @@ from core.digital_signature import generate_keys, sign_data, verify_signature
 from core.hash_chain import HashChain
 from core.authentication import UserAuthenticator
 from core.authorization import ABACPolicyEnforcer # ABAC機能を追加
+from core.data_encryption import DataEncryptor # データ暗号化機能を追加
+from core.audit_logger import AuditLogger # 監査ログ機能を追加
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.urandom(24) # セッション管理のための秘密鍵
+# セッション管理のための固定秘密鍵（開発用）
+# 注意: 本番環境では環境変数から取得すること
+app.config["SECRET_KEY"] = "SecHack365_medical_dx_project_secret_key_2024"
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
+login_manager.login_message = "この機能を使用するにはログインが必要です。"
+login_manager.login_message_category = "info"
+
+# セッション設定を強化（HTTP開発環境用）
+app.config['SESSION_COOKIE_SECURE'] = False  # HTTP環境ではFalse
+app.config['SESSION_COOKIE_HTTPONLY'] = False  # 開発環境では一時的にFalse
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # current_userをテンプレートで利用可能にする
 @app.context_processor
 def inject_user():
     return dict(current_user=current_user)
 
+# すべてのリクエストをログに出力（デバッグ用）
+@app.before_request
+def log_request():
+    print(f"[REQUEST] {request.method} {request.path} from {request.remote_addr}")
+    if request.path.startswith('/api/'):
+        print(f"[API REQUEST] Headers: {dict(request.headers)}")
+        if current_user.is_authenticated:
+            print(f"[API REQUEST] User: {current_user.id}")
+        else:
+            print(f"[API REQUEST] User: 未認証")
+
 # UserAuthenticatorの初期化
 authenticator = UserAuthenticator(os.path.join(app.root_path, "user_db.json"))
+
+# AuditLoggerの初期化（プロジェクトルートにaudit.logを作成）
+audit_logger = AuditLogger(log_file=os.path.join(app.root_path, "..", "..", "audit.log"))
 
 # ABACPolicyEnforcerの初期化
 abac_enforcer = ABACPolicyEnforcer(os.path.join(app.root_path, "..", "..", "abac_policy.json")) # パスを調整
 
 # Flask-LoginのためのUserクラス
 class User(UserMixin):
-    def __init__(self, id, role):
+    def __init__(self, id, role, encryption_key=None):
         self.id = id
         self.role = role
+        self.encryption_key = encryption_key # 暗号化キーをユーザーオブジェクトに保存
 
     def get_id(self):
         return str(self.id)
 
     def get_role(self):
         return self.role
+    
+    def get_encryption_key(self):
+        return self.encryption_key
+    
+    def has_encryption_key(self):
+        return self.encryption_key is not None
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -94,11 +126,89 @@ def save_karte_data(data):
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
+def load_encrypted_karte_data(encryption_key):
+    """
+    暗号化されたカルテデータを読み込み、復号する
+    
+    Args:
+        encryption_key (bytes): 復号用の暗号化キー
+        
+    Returns:
+        dict: 復号されたカルテデータ
+    """
+    encrypted_data_file = os.path.join(app.root_path, "demo_karte_encrypted.json")
+    
+    if not os.path.exists(encrypted_data_file):
+        # 暗号化ファイルが存在しない場合、既存の平文データを暗号化して移行
+        if os.path.exists(DATA_FILE):
+            print(f"[INFO] 平文データを暗号化形式に移行中...")
+            plain_data = load_karte_data()
+            save_encrypted_karte_data(plain_data, encryption_key)
+            return plain_data
+        else:
+            return {}
+    
+    try:
+        with open(encrypted_data_file, 'r', encoding='utf-8') as f:
+            encrypted_content = json.load(f)
+        
+        # DataEncryptorで復号
+        encryptor = DataEncryptor(encryption_key)
+        decrypted_data = encryptor.decrypt_json(encrypted_content["encrypted_data"])
+        
+        print(f"[INFO] 暗号化データを正常に復号しました")
+        return decrypted_data
+        
+    except Exception as e:
+        print(f"[ERROR] データ復号エラー: {e}")
+        # 復号に失敗した場合は空のデータを返す
+        return {}
+
+def save_encrypted_karte_data(data, encryption_key):
+    """
+    カルテデータを暗号化して保存する
+    
+    Args:
+        data (dict): 保存するカルテデータ
+        encryption_key (bytes): 暗号化用のキー
+    """
+    encrypted_data_file = os.path.join(app.root_path, "demo_karte_encrypted.json")
+    
+    try:
+        # DataEncryptorで暗号化
+        encryptor = DataEncryptor(encryption_key)
+        encrypted_data = encryptor.encrypt_json(data)
+        
+        # 暗号化データとメタデータを保存
+        encrypted_content = {
+            "encrypted_data": encrypted_data,
+            "encryption_info": encryptor.get_encryption_info(),
+            "last_updated": datetime.now().isoformat(),
+            "version": "1.0"
+        }
+        
+        with open(encrypted_data_file, 'w', encoding='utf-8') as f:
+            json.dump(encrypted_content, f, ensure_ascii=False, indent=4)
+        
+        print(f"[INFO] データを暗号化して保存しました")
+        
+    except Exception as e:
+        print(f"[ERROR] データ暗号化エラー: {e}")
+        raise
+
 karte_data = load_karte_data()
 
 # デモ用ユーザーの初期化
 def initialize_demo_users():
-    """デモ用ユーザーを初期化"""
+    """デモ用ユーザーを初期化（既存データを保護）"""
+    
+    # 既存ユーザーが存在する場合はスキップ
+    if authenticator.users:
+        print(f"[INFO] 既存ユーザーが見つかりました: {list(authenticator.users.keys())}")
+        print("[INFO] デモユーザーの初期化をスキップしました（既存データを保護）")
+        return
+    
+    print("[INFO] 新規環境を検出。デモユーザーを初期化します...")
     demo_users = [
         ("doctor1", "secure_pass_doc", "doctor", True),
         ("nurse1", "secure_pass_nurse", "nurse", False),
@@ -107,18 +217,160 @@ def initialize_demo_users():
     ]
     
     for username, password, role, enable_mfa in demo_users:
-        # 既に存在しない場合のみ作成
-        if username not in authenticator.users:
-            success, message, mfa_secret = authenticator.register_user(
-                username, password, role, enable_mfa
-            )
-            if success:
-                print(f"[DEMO] ユーザー作成: {username} ({role}) - MFA: {enable_mfa}")
-                if mfa_secret:
-                    print(f"[DEMO] {username} のMFAシークレット: {mfa_secret}")
+        success, message, mfa_secret = authenticator.register_user(
+            username, password, role, enable_mfa
+        )
+        if success:
+            print(f"[DEMO] ユーザー作成: {username} ({role}) - MFA: {enable_mfa}")
+            if mfa_secret:
+                print(f"[DEMO] {username} のMFAシークレット: {mfa_secret}")
+        else:
+            print(f"[ERROR] ユーザー作成失敗 {username}: {message}")
+    
+    print("[INFO] デモユーザーの初期化が完了しました")
+
+def get_or_create_webauthn_encryption_key(username):
+    """
+    WebAuthn認証用の専用暗号化キーを取得または生成
+    
+    Args:
+        username (str): ユーザー名
+        
+    Returns:
+        bytes: 暗号化キー（32バイト）
+    """
+    # WebAuthn用暗号化キーファイルのパス
+    webauthn_keys_file = os.path.join(app.root_path, "webauthn_encryption_keys.json")
+    
+    # 既存のキーを読み込み
+    webauthn_keys = {}
+    if os.path.exists(webauthn_keys_file):
+        try:
+            with open(webauthn_keys_file, 'r', encoding='utf-8') as f:
+                webauthn_keys = json.load(f)
+        except Exception as e:
+            print(f"[WARNING] WebAuthn暗号化キーファイルの読み込みに失敗: {e}")
+    
+    # ユーザーのキーが存在するかチェック
+    if username in webauthn_keys:
+        try:
+            # Base64デコードして暗号化キーを返す
+            import base64
+            return base64.b64decode(webauthn_keys[username])
+        except Exception as e:
+            print(f"[ERROR] WebAuthn暗号化キーのデコードに失敗: {e}")
+    
+    # キーが存在しない場合は新規生成
+    print(f"[INFO] ユーザー {username} の新しいWebAuthn暗号化キーを生成中...")
+    new_key = os.urandom(32)  # 32バイト = AES-256
+    
+    # Base64エンコードして保存
+    import base64
+    webauthn_keys[username] = base64.b64encode(new_key).decode('utf-8')
+    
+    # ファイルに保存
+    try:
+        with open(webauthn_keys_file, 'w', encoding='utf-8') as f:
+            json.dump(webauthn_keys, f, ensure_ascii=False, indent=4)
+        print(f"[SUCCESS] ユーザー {username} のWebAuthn暗号化キーを保存しました")
+    except Exception as e:
+        print(f"[ERROR] WebAuthn暗号化キーの保存に失敗: {e}")
+    
+    return new_key
 
 # アプリケーション起動時にデモユーザーを初期化
+print("[STARTUP] アプリケーション初期化中...")
 initialize_demo_users()
+
+# 患者データの確認と作成
+def ensure_patient_data():
+    """患者データが存在しない場合は作成する"""
+    encrypted_data_file = os.path.join(app.root_path, "demo_karte_encrypted.json")
+    
+    if not os.path.exists(encrypted_data_file):
+        print("[STARTUP] 患者データが見つかりません。作成中...")
+        try:
+            # doctor1のパスワードベース暗号化キーを取得
+            username = 'doctor1'
+            password = 'secure_pass_doc'
+            salt = authenticator.get_user_encryption_salt(username)
+            
+            if salt:
+                encryption_key = authenticator.derive_encryption_key(password, salt)
+                
+                # 山下真凜の患者データを作成
+                patient_data = {
+                    'P001': {
+                        'patient_info': {
+                            'id': 'P001',
+                            'name': '山下真凜',
+                            'age': 28,
+                            'gender': '女性',
+                            'contact': '03-1234-5678',
+                            'address': '東京都渋谷区'
+                        },
+                        'medical_records': [
+                            {
+                                'timestamp': '2024-01-15T10:30:00Z',
+                                'data': {
+                                    'diagnosis': '軽度の貧血',
+                                    'medication': '鉄剤 100mg',
+                                    'notes': '食事指導を実施。1ヶ月後に再検査予定。',
+                                    'doctor': 'Dr. 田中',
+                                    'blood_pressure': '120/80',
+                                    'temperature': '36.5°C'
+                                },
+                                'signature': 'yamashita_signature_1'
+                            }
+                        ]
+                    }
+                }
+                
+                # データを暗号化して保存
+                save_encrypted_karte_data(patient_data, encryption_key)
+                print("[STARTUP] 患者データを作成しました: 山下真凜 (P001)")
+                
+                # 作成したデータの検証
+                try:
+                    test_data = load_encrypted_karte_data(encryption_key)
+                    if test_data and 'P001' in test_data:
+                        print("[STARTUP] 患者データの作成と復号を確認しました")
+                    else:
+                        print("[STARTUP] 警告: 作成したデータの復号に失敗")
+                except Exception as verify_error:
+                    print(f"[STARTUP] データ検証エラー: {verify_error}")
+            else:
+                print("[STARTUP] 患者データの作成に失敗: ソルトが見つかりません")
+        except Exception as e:
+            print(f"[STARTUP] 患者データ作成エラー: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print("[STARTUP] 患者データファイルを確認しました")
+        # 既存データの検証
+        try:
+            # doctor1のキーで復号テスト
+            username = 'doctor1'
+            password = 'secure_pass_doc'
+            salt = authenticator.get_user_encryption_salt(username)
+            if salt:
+                encryption_key = authenticator.derive_encryption_key(password, salt)
+                test_data = load_encrypted_karte_data(encryption_key)
+                if test_data and isinstance(test_data, dict):
+                    patient_ids = list(test_data.keys())
+                    print(f"[STARTUP] 患者データ確認: {patient_ids}")
+                    # 各患者の詳細も確認
+                    for patient_id in patient_ids:
+                        patient_info = test_data[patient_id].get('patient_info', {})
+                        patient_name = patient_info.get('name', '不明')
+                        print(f"[STARTUP] 患者 {patient_id}: {patient_name}")
+                else:
+                    print("[STARTUP] 警告: 患者データが空または無効です")
+        except Exception as e:
+            print(f"[STARTUP] 患者データ確認エラー: {e}")
+
+ensure_patient_data()
+print("[STARTUP] アプリケーション初期化完了")
 
 @app.route('/')
 def index():
@@ -127,6 +379,15 @@ def index():
         return render_template('index.html', username=current_user.id, role=current_user.role)
     else:
         return render_template('index.html')
+
+@app.route('/api/test')
+def api_test():
+    """APIテスト用エンドポイント"""
+    return jsonify({
+        'status': 'ok',
+        'message': 'API is working',
+                'timestamp': datetime.now().isoformat()
+    })
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -141,12 +402,46 @@ def login():
         if authenticated:
             if mfa_required:
                 session['mfa_username'] = username # MFA検証のためにユーザー名をセッションに保存
+                session['temp_password'] = password # MFA検証のために一時的にパスワードを保存
                 return redirect(url_for('mfa_verify'))
             else:
-                user = User(username, authenticator.get_user_role(username))
+                # パスワード認証成功時に暗号化キーを導出
+                user_data = authenticator.users.get(username)
+                salt = authenticator.get_user_encryption_salt(username)
+                if salt:
+                    encryption_key = authenticator.derive_encryption_key(password, salt)
+                    user = User(username, authenticator.get_user_role(username), encryption_key)
+                    print(f"[INFO] ユーザー {username} の暗号化キーを設定しました")
+                else:
+                    user = User(username, authenticator.get_user_role(username))
+                    print(f"[WARNING] ユーザー {username} のソルトが見つかりません")
                 login_user(user)
+                # 監査ログ: ログイン成功
+                audit_logger.log_event(
+                    event_id="AUTH_LOGIN_SUCCESS",
+                    user_id=username,
+                    user_role=authenticator.get_user_role(username),
+                    ip_address=request.remote_addr,
+                    action="LOGIN",
+                    resource="/login",
+                    status="SUCCESS",
+                    message="ユーザーがログインしました",
+                    details={"mfa_enabled": False}
+                )
                 return redirect(url_for('index'))
         else:
+            # 監査ログ: ログイン失敗
+            audit_logger.log_event(
+                event_id="AUTH_LOGIN_FAILURE",
+                user_id=username,
+                user_role="unknown",
+                ip_address=request.remote_addr,
+                action="LOGIN",
+                resource="/login",
+                status="FAILURE",
+                message="ログインに失敗しました",
+                details={"reason": message}
+            )
             flash(message)
             return render_template('login.html', error=message)
     return render_template('login.html')
@@ -161,9 +456,24 @@ def mfa_verify():
         mfa_code = request.form['mfa_code']
         verified, message = authenticator.verify_mfa(username, mfa_code)
         if verified:
-            user = User(username, authenticator.get_user_role(username))
+            # MFA認証成功時に暗号化キーを導出
+            password = session.get('temp_password')
+            if password:
+                salt = authenticator.get_user_encryption_salt(username)
+                if salt:
+                    encryption_key = authenticator.derive_encryption_key(password, salt)
+                    user = User(username, authenticator.get_user_role(username), encryption_key)
+                    print(f"[INFO] MFA認証後、ユーザー {username} の暗号化キーを設定しました")
+                else:
+                    user = User(username, authenticator.get_user_role(username))
+                    print(f"[WARNING] ユーザー {username} のソルトが見つかりません")
+            else:
+                user = User(username, authenticator.get_user_role(username))
+                print(f"[WARNING] 一時パスワードが見つかりません")
+            
             login_user(user)
             session.pop('mfa_username', None)
+            session.pop('temp_password', None) # セキュリティのため一時パスワードを削除
             return redirect(url_for('index'))
         else:
             flash(message)
@@ -195,8 +505,73 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/api/patient/<patient_id>', methods=['GET'])
-@login_required
 def get_patient_data(patient_id):
+    print(f"[API] 患者データ取得リクエスト受信: {patient_id}")
+    
+    # 手動で認証チェック（@login_requiredの代わり）
+    if not current_user.is_authenticated:
+        print(f"[API] 認証されていないユーザーからのリクエスト")
+        return jsonify({
+            'error': 'この機能を使用するにはログインが必要です。',
+            'auth_method': 'login_required'
+        }), 401
+    
+    print(f"[API] 認証済みユーザー: {current_user.id}")
+    # 暗号化キーの確認
+    if not current_user.has_encryption_key():
+        print(f"[DEBUG] ユーザー {current_user.id} に暗号化キーがありません。複数のキーを試行中...")
+        
+        # 複数の暗号化キーを試行
+        encryption_key_found = False
+        
+        try:
+            # 1. パスワードベース暗号化キーを試行（既存データ用）
+            demo_passwords = {
+                'doctor1': 'secure_pass_doc',
+                'nurse1': 'secure_pass_nurse', 
+                'patient1': 'secure_pass_pat',
+                'admin1': 'secure_pass_admin'
+            }
+            
+            if current_user.id in demo_passwords:
+                salt = authenticator.get_user_encryption_salt(current_user.id)
+                if salt:
+                    password_key = authenticator.derive_encryption_key(demo_passwords[current_user.id], salt)
+                    try:
+                        test_data = load_encrypted_karte_data(password_key)
+                        if test_data:
+                            current_user.encryption_key = password_key
+                            encryption_key_found = True
+                            print(f"[SUCCESS] パスワードベース暗号化キーでデータアクセス成功: {current_user.id}")
+                    except Exception as e:
+                        print(f"[WARNING] パスワードベース暗号化キーで復号失敗: {e}")
+            
+            # 2. WebAuthn専用キーを試行（フォールバック）
+            if not encryption_key_found:
+                webauthn_key = get_or_create_webauthn_encryption_key(current_user.id)
+                if webauthn_key:
+                    try:
+                        test_data = load_encrypted_karte_data(webauthn_key)
+                        if test_data:
+                            current_user.encryption_key = webauthn_key
+                            encryption_key_found = True
+                            print(f"[SUCCESS] WebAuthn暗号化キーでデータアクセス成功: {current_user.id}")
+                    except Exception as e:
+                        print(f"[WARNING] WebAuthn暗号化キーで復号失敗: {e}")
+            
+            if not encryption_key_found:
+                return jsonify({
+                    "error": "暗号化データの復号に失敗しました。データが破損している可能性があります。",
+                    "auth_method": "decryption_failed"
+                }), 401
+                
+        except Exception as e:
+            print(f"[ERROR] 暗号化キー取得エラー: {e}")
+            return jsonify({
+                "error": "暗号化キーが利用できません。",
+                "auth_method": "key_error"
+            }), 401
+
     subject_attributes = {"id": current_user.id, "role": current_user.role}
     action = "view"
     resource_attributes = {"type": "patient_data", "patient_id": patient_id}
@@ -204,8 +579,20 @@ def get_patient_data(patient_id):
     if not abac_enforcer.check_access(subject_attributes, action, resource_attributes):
         return jsonify({'error': 'Permission denied'}), 403
 
-    patient = karte_data.get(patient_id)
+    # 暗号化されたデータを読み込み
+    try:
+        decrypted_karte_data = load_encrypted_karte_data(current_user.get_encryption_key())
+        print(f"[DEBUG] 復号されたデータのキー: {list(decrypted_karte_data.keys()) if decrypted_karte_data else 'None'}")
+        patient = decrypted_karte_data.get(patient_id) if decrypted_karte_data else None
+        print(f"[DEBUG] 患者 {patient_id} のデータ: {'見つかりました' if patient else '見つかりません'}")
+    except Exception as e:
+        print(f"[ERROR] データ復号エラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'データの復号に失敗しました'}), 500
+    
     if not patient:
+        print(f"[ERROR] 患者 {patient_id} が見つかりません。利用可能な患者ID: {list(decrypted_karte_data.keys()) if decrypted_karte_data else '[]'}")
         return jsonify({'error': 'Patient not found'}), 404
 
     # 最新のカルテ情報を取得
@@ -232,11 +619,62 @@ def get_patient_data(patient_id):
         'signature_status': 'Valid' if is_valid_signature else 'Invalid',
         'hash_chain_status': 'Valid' if is_valid_hash_chain else 'Invalid'
     }
+    
+    # 監査ログ: 患者データアクセス成功
+    audit_logger.log_event(
+        event_id="DATA_ACCESS",
+        user_id=current_user.id,
+        user_role=current_user.role,
+        ip_address=request.remote_addr,
+        action="VIEW_PATIENT_DATA",
+        resource=f"/api/patient/{patient_id}",
+        status="SUCCESS",
+        message="患者データにアクセスしました",
+        details={
+            "patient_id": patient_id,
+            "encryption_method": "AES-256-GCM",
+            "hash_chain_valid": is_valid_hash_chain
+        }
+    )
+    
     return jsonify(response_data)
 
 @app.route('/api/patient/<patient_id>/add_record', methods=['POST'])
-@login_required
 def add_medical_record(patient_id):
+    print(f"[API] 医療記録追加リクエスト受信: {patient_id}")
+    
+    # 手動で認証チェック
+    if not current_user.is_authenticated:
+        print(f"[API] 認証されていないユーザーからのリクエスト")
+        return jsonify({
+            'error': 'この機能を使用するにはログインが必要です。',
+            'auth_method': 'login_required'
+        }), 401
+    
+    print(f"[API] 認証済みユーザー: {current_user.id}")
+    # 暗号化キーの確認
+    if not current_user.has_encryption_key():
+        print(f"[DEBUG] ユーザー {current_user.id} に暗号化キーがありません。WebAuthn用キーを確認中...")
+        
+        # WebAuthn認証の場合、専用暗号化キーを取得
+        try:
+            webauthn_key = get_or_create_webauthn_encryption_key(current_user.id)
+            if webauthn_key:
+                # 現在のユーザーオブジェクトに暗号化キーを設定
+                current_user.encryption_key = webauthn_key
+                print(f"[INFO] WebAuthn暗号化キーを設定しました: {current_user.id}")
+            else:
+                return jsonify({
+                    "error": "暗号化キーが利用できません。パスワードでログインしてください。",
+                    "auth_method": "password_required"
+                }), 401
+        except Exception as e:
+            print(f"[ERROR] WebAuthn暗号化キー取得エラー: {e}")
+            return jsonify({
+                "error": "暗号化キーが利用できません。パスワードでログインしてください。",
+                "auth_method": "password_required"
+            }), 401
+
     subject_attributes = {"id": current_user.id, "role": current_user.role}
     action = "add"
     resource_attributes = {"type": "patient_data", "patient_id": patient_id}
@@ -244,7 +682,14 @@ def add_medical_record(patient_id):
     if not abac_enforcer.check_access(subject_attributes, action, resource_attributes):
         return jsonify({'error': 'Permission denied'}), 403
 
-    patient = karte_data.get(patient_id)
+    # 暗号化されたデータを読み込み
+    try:
+        decrypted_karte_data = load_encrypted_karte_data(current_user.get_encryption_key())
+        patient = decrypted_karte_data.get(patient_id)
+    except Exception as e:
+        print(f"[ERROR] データ復号エラー: {e}")
+        return jsonify({'error': 'データの復号に失敗しました'}), 500
+
     if not patient:
         return jsonify({'error': 'Patient not found'}), 404
 
@@ -271,7 +716,14 @@ def add_medical_record(patient_id):
         'timestamp': datetime.now().isoformat()
     })
 
-    save_karte_data(karte_data)
+    # 暗号化してデータを保存
+    try:
+        save_encrypted_karte_data(decrypted_karte_data, current_user.get_encryption_key())
+        print(f"[INFO] 患者 {patient_id} のデータを暗号化して保存しました")
+    except Exception as e:
+        print(f"[ERROR] データ暗号化保存エラー: {e}")
+        return jsonify({'error': 'データの保存に失敗しました'}), 500
+
     return jsonify({'message': 'Medical record added successfully', 'record': record_entry}), 201
 
 # WebAuthn関連のエンドポイント
@@ -281,17 +733,121 @@ def webauthn_register():
     """WebAuthn認証器登録ページを表示"""
     return render_template('webauthn_register.html', username=current_user.id)
 
+@app.route('/audit-dashboard')
+@login_required
+def audit_dashboard():
+    """監査ログダッシュボードを表示"""
+    # 管理者権限チェック
+    if current_user.role != 'admin' and current_user.role != 'doctor':
+        flash('監査ログダッシュボードへのアクセス権限がありません')
+        return redirect(url_for('index'))
+    
+    return render_template('audit_dashboard.html')
+
+@app.route('/api/webauthn/status', methods=['GET'])
+@login_required
+def webauthn_status():
+    """WebAuthn認証器の登録状況を確認"""
+    try:
+        # ヘルパー関数を使用してWebAuthn状況を確認
+        from core.webauthn_helper import has_webauthn_credentials, get_webauthn_credentials
+        user_db_path = os.path.join(os.path.dirname(__file__), 'user_db.json')
+        
+        has_webauthn = has_webauthn_credentials(current_user.id, user_db_path)
+        credentials = get_webauthn_credentials(current_user.id, user_db_path)
+        credentials_count = len(credentials)
+        
+        return jsonify({
+            'registered': has_webauthn,
+            'credentials_count': credentials_count,
+            'username': current_user.id
+        })
+    except Exception as e:
+        print(f"[ERROR] WebAuthn状況確認エラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/audit-logs', methods=['GET'])
+@login_required
+def get_audit_logs():
+    """監査ログを取得してAPIで提供"""
+    try:
+        # 管理者権限チェック
+        if current_user.role != 'admin' and current_user.role != 'doctor':
+            return jsonify({'error': '権限がありません'}), 403
+        
+        audit_log_path = os.path.join(app.root_path, "..", "..", "audit.log")
+        logs = []
+        stats = {
+            'total': 0,
+            'success': 0,
+            'failure': 0,
+            'activeUsers': 0
+        }
+        
+        if os.path.exists(audit_log_path):
+            try:
+                with open(audit_log_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                    
+                active_users = set()
+                for line in lines:
+                    line = line.strip()
+                    if line:
+                        try:
+                            log_entry = json.loads(line)
+                            logs.append(log_entry)
+                            
+                            # 統計情報の更新
+                            stats['total'] += 1
+                            if log_entry.get('status') == 'SUCCESS':
+                                stats['success'] += 1
+                            elif log_entry.get('status') == 'FAILURE':
+                                stats['failure'] += 1
+                            
+                            if log_entry.get('user_id') and log_entry.get('user_id') != 'anonymous':
+                                active_users.add(log_entry.get('user_id'))
+                                
+                        except json.JSONDecodeError:
+                            continue  # 無効なJSON行をスキップ
+                
+                stats['activeUsers'] = len(active_users)
+                
+            except Exception as e:
+                print(f"[ERROR] 監査ログ読み込みエラー: {e}")
+                
+        # 最新のログから順に並び替え
+        logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        
+        return jsonify({
+            'logs': logs,
+            'stats': stats
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] 監査ログAPI エラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/webauthn/register/begin', methods=['POST'])
 @login_required
 def webauthn_register_begin():
     """WebAuthn認証器登録を開始"""
     try:
+        print(f"[DEBUG] WebAuthn登録開始: {current_user.id}")
         registration_options = authenticator.generate_webauthn_registration_options(current_user.id)
         if registration_options:
+            print(f"[DEBUG] WebAuthn登録オプション生成成功: {current_user.id}")
             return jsonify(registration_options)
         else:
+            print(f"[ERROR] WebAuthn登録オプション生成失敗: {current_user.id}")
             return jsonify({'error': '登録オプションの生成に失敗しました'}), 500
     except Exception as e:
+        print(f"[ERROR] WebAuthn登録開始エラー: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'登録開始エラー: {str(e)}'}), 500
 
 @app.route('/webauthn/register/complete', methods=['POST'])
@@ -311,6 +867,8 @@ def webauthn_register_complete():
         )
         
         if success:
+            # WebAuthn登録成功時に暗号化キーを生成（まだ存在しない場合）
+            get_or_create_webauthn_encryption_key(current_user.id)
             return jsonify({'success': True, 'message': message})
         else:
             return jsonify({'success': False, 'error': message}), 400
@@ -335,10 +893,29 @@ def webauthn_login_begin():
         if not username:
             return jsonify({'error': 'ユーザー名が必要です'}), 400
         
+        # ヘルパー関数を使用してWebAuthn認証器を確認
+        from core.webauthn_helper import has_webauthn_credentials, get_webauthn_credentials
+        user_db_path = os.path.join(os.path.dirname(__file__), 'user_db.json')
+        
+        has_webauthn = has_webauthn_credentials(username, user_db_path)
+        credentials = get_webauthn_credentials(username, user_db_path)
+        
+        print(f"[DEBUG] ユーザー {username} のWebAuthn認証器数: {len(credentials)}")
+        print(f"[DEBUG] WebAuthn登録状況: {has_webauthn}")
+        
+        if not has_webauthn or len(credentials) == 0:
+            print(f"[ERROR] ユーザー {username} にWebAuthn認証器が登録されていません")
+            return jsonify({'error': 'WebAuthn認証器が登録されていません'}), 400
+            
+        for i, cred in enumerate(credentials):
+            print(f"[DEBUG] 認証器 {i+1}: credential_id={cred.get('credential_id', 'N/A')[:20]}...")
+        
         authentication_options = authenticator.generate_webauthn_authentication_options(username)
         if authentication_options:
+            print(f"[DEBUG] WebAuthn認証オプションを生成しました: {username}")
             return jsonify(authentication_options)
         else:
+            print(f"[DEBUG] WebAuthn認証器が登録されていません: {username}")
             return jsonify({'error': 'WebAuthn認証器が登録されていません'}), 400
             
     except Exception as e:
@@ -361,9 +938,30 @@ def webauthn_login_complete():
         )
         
         if success:
-            # ユーザーをログイン状態にする
-            user = User(username, authenticator.get_user_role(username))
+            print(f"[DEBUG] WebAuthn認証成功: {username}")
+            
+            # WebAuthn認証成功時に専用暗号化キーを生成・取得
+            encryption_key = get_or_create_webauthn_encryption_key(username)
+            print(f"[DEBUG] 暗号化キーを取得: {len(encryption_key)}バイト")
+            
+            # ユーザーをログイン状態にする（暗号化キー付き）
+            user = User(username, authenticator.get_user_role(username), encryption_key)
             login_user(user)
+            print(f"[DEBUG] ユーザーログイン完了: {username} (暗号化キー有効)")
+            
+            # 監査ログ: WebAuthnログイン成功
+            audit_logger.log_event(
+                event_id="AUTH_WEBAUTHN_SUCCESS",
+                user_id=username,
+                user_role=authenticator.get_user_role(username),
+                ip_address=request.remote_addr,
+                action="WEBAUTHN_LOGIN",
+                resource="/webauthn/login/complete",
+                status="SUCCESS",
+                message="WebAuthn認証でログインしました",
+                details={"authentication_method": "webauthn"}
+            )
+            
             return jsonify({'success': True, 'message': message, 'redirect': url_for('index')})
         else:
             return jsonify({'success': False, 'error': message}), 400
@@ -371,8 +969,13 @@ def webauthn_login_complete():
     except Exception as e:
         return jsonify({'error': f'認証完了エラー: {str(e)}'}), 500
 
+# 登録されているルートを表示（デバッグ用）
+print("[STARTUP] 登録されているAPIルート:")
+for rule in app.url_map.iter_rules():
+    if '/api/' in rule.rule:
+        print(f"  {rule.rule} -> {rule.endpoint} ({list(rule.methods)})")
+
+# このファイルは run_app.py から呼び出されるため、直接実行しない
 if __name__ == '__main__':
-    # certsディレクトリが存在しない場合は作成
-    if not os.path.exists(CERT_DIR):
-        os.makedirs(CERT_DIR)
-    app.run(debug=True, ssl_context=(os.path.join(CERT_DIR, 'cert.pem'), os.path.join(CERT_DIR, 'key.pem')))
+    print("[WARNING] このファイルは直接実行しないでください")
+    print("[INFO] python info_sharing_system/run_app.py を使用してください")

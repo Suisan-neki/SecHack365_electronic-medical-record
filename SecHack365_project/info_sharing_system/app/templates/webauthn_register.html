@@ -130,6 +130,8 @@
             </ul>
         </div>
         
+        <div id="registrationStatus" class="status-message" style="display: none;"></div>
+        
         <button id="registerButton" class="register-button">
             🔑 認証器を登録
         </button>
@@ -145,12 +147,42 @@
 
         const registerButton = document.getElementById('registerButton');
         const statusMessage = document.getElementById('statusMessage');
+        const registrationStatus = document.getElementById('registrationStatus');
 
         function showStatus(message, type) {
             statusMessage.textContent = message;
             statusMessage.className = `status-message ${type}`;
             statusMessage.style.display = 'block';
         }
+
+        function showRegistrationStatus(message, type) {
+            registrationStatus.textContent = message;
+            registrationStatus.className = `status-message ${type}`;
+            registrationStatus.style.display = 'block';
+        }
+
+        // ページ読み込み時にWebAuthn登録状況をチェック
+        async function checkWebAuthnStatus() {
+            try {
+                const response = await fetch('/api/webauthn/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.registered && data.credentials_count > 0) {
+                        showRegistrationStatus(`✅ WebAuthn認証器が${data.credentials_count}個登録済みです`, 'success');
+                        registerButton.textContent = '🔑 追加の認証器を登録';
+                    } else {
+                        showRegistrationStatus('❌ WebAuthn認証器が登録されていません', 'warning');
+                    }
+                } else {
+                    console.error('WebAuthn状況確認エラー:', response.status);
+                }
+            } catch (error) {
+                console.error('WebAuthn状況確認エラー:', error);
+            }
+        }
+
+        // ページ読み込み時に実行
+        document.addEventListener('DOMContentLoaded', checkWebAuthnStatus);
 
         registerButton.addEventListener('click', async () => {
             try {

@@ -4,3 +4,4 @@ pyotp
 qrcode[pil]
 Flask-Login
 webauthn
+passlib
