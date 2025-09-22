@@ -1,0 +1,53 @@
+{
+    "rules": [
+        {
+            "name": "Doctor can view patient data",
+            "subject": {
+                "role": "doctor"
+            },
+            "action": "view",
+            "resource": {
+                "type": "patient_data"
+            },
+            "effect": "permit"
+        },
+        {
+            "name": "Admin can view and add patient data",
+            "subject": {
+                "role": "admin"
+            },
+            "action": [
+                "view",
+                "add"
+            ],
+            "resource": {
+                "type": "patient_data"
+            },
+            "effect": "permit"
+        },
+        {
+            "name": "Patient can view own data",
+            "subject": {
+                "role": "patient",
+                "id": "resource.patient_id"
+            },
+            "action": "view",
+            "resource": {
+                "type": "patient_data"
+            },
+            "effect": "permit"
+        },
+        {
+            "name": "Doctor can add patient data",
+            "subject": {
+                "role": "doctor"
+            },
+            "action": "add",
+            "resource": {
+                "type": "patient_data"
+            },
+            "effect": "permit"
+        }
+    ],
+    "default_effect": "deny"
+}

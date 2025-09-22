@@ -13,6 +13,7 @@ import os
 import json
 import pyotp  # TOTP（Time-based One-Time Password）ライブラリ
 import qrcode  # QRコード生成用（オプション）
+from passlib.hash import pbkdf2_sha256  # passlibを使用した強力な鍵導出
 from webauthn import generate_registration_options, verify_registration_response, generate_authentication_options, verify_authentication_response
 from webauthn.helpers.structs import (
     AuthenticatorSelectionCriteria, 
@@ -49,7 +50,7 @@ class UserAuthenticator:
         # WebAuthn設定
         self.rp_id = "localhost"  # Relying Party ID（本番環境では実際のドメイン）
         self.rp_name = "SecHack365 PHR System"
-        self.origin = "https://localhost:5000"
+        self.origin = "http://localhost:5001"  # HTTPの5001ポートに変更
 
     def _load_users(self):
         """
@@ -78,28 +79,36 @@ class UserAuthenticator:
 
     def hash_password(self, password, salt=None):
         """
-        PBKDF2-HMAC-SHA256を使用してパスワードをハッシュ化
+        passlib PBKDF2-SHA256を使用してパスワードをハッシュ化
         
         Args:
             password (str): 平文パスワード
-            salt (str, optional): 既存のソルト（16進数文字列）
+            salt (str, optional): 既存のソルト（16進数文字列、互換性のため）
             
         Returns:
             tuple: (ハッシュ化されたパスワード, ソルト)
         """
         if salt is None:
-            salt = os.urandom(16)  # 16バイトのランダムなソルトを生成
+            # passlibが自動でソルトを生成
+            hashed = pbkdf2_sha256.hash(password)
+            # passlibのハッシュからソルトを抽出（$pbkdf2-sha256$rounds$salt$hash形式）
+            parts = hashed.split("$")
+            if len(parts) >= 4:
+                salt_extracted = parts[3]
+            else:
+                salt_extracted = os.urandom(16).hex()
+            return hashed, salt_extracted
         else:
-            salt = bytes.fromhex(salt)
-        
-        # PBKDF2-HMAC-SHA256でハッシュ化（100,000回イテレーション）
-        hashed_password = hashlib.pbkdf2_hmac(
-            'sha256',  # ハッシュアルゴリズム
-            password.encode('utf-8'),  # パスワードをバイト列にエンコード
-            salt,  # ソルト
-            100000  # イテレーション回数（NIST推奨値）
-        ).hex()
-        return hashed_password, salt.hex()
+            # 既存のソルトを使用（互換性のため）
+            try:
+                hashed = pbkdf2_sha256.using(salt=salt.encode()).hash(password)
+                return hashed, salt
+            except:
+                # フォールバック: 新しいハッシュを生成
+                hashed = pbkdf2_sha256.hash(password)
+                parts = hashed.split("$")
+                salt_extracted = parts[3] if len(parts) >= 4 else salt
+                return hashed, salt_extracted
 
     def register_user(self, username, password, role="user", enable_mfa=False):
         """
@@ -126,6 +135,9 @@ class UserAuthenticator:
         # MFAが有効な場合、TOTPシークレットを生成
         mfa_secret = pyotp.random_base32() if enable_mfa else None
         
+        # 専用の暗号化キーを生成（WebAuthn認証時にも使用可能）
+        encryption_key = self._generate_encryption_key()
+        
         self.users[username] = {
             "password": hashed_password,
             "salt": salt,
@@ -136,11 +148,25 @@ class UserAuthenticator:
             "last_login": None,
             "mfa_backup_codes": self._generate_backup_codes() if enable_mfa else None,
             "webauthn_credentials": [],  # WebAuthn認証器情報
-            "webauthn_challenges": {}    # WebAuthnチャレンジ情報
+            "webauthn_challenges": {},   # WebAuthnチャレンジ情報
+            "encryption_key": encryption_key  # 専用暗号化キー（Base64エンコード済み）
         }
         self._save_users()
         
         return True, "ユーザー登録に成功しました", mfa_secret
+
+    def verify_password(self, password, hashed_password):
+        """
+        passlibを使用してパスワードを検証
+        
+        Args:
+            password (str): 平文パスワード
+            hashed_password (str): ハッシュ化されたパスワード
+            
+        Returns:
+            bool: パスワードが正しい場合True
+        """
+        return pbkdf2_sha256.verify(password, hashed_password)
 
     def authenticate_user(self, username, password):
         """
@@ -157,9 +183,8 @@ class UserAuthenticator:
         if not user_data:
             return False, "ユーザーが見つかりません", False
         
-        # パスワードを検証
-        hashed_password_attempt, _ = self.hash_password(password, user_data["salt"])
-        if hashed_password_attempt == user_data["password"]:
+        # パスワードを検証（passlibを使用）
+        if self.verify_password(password, user_data["password"]):
             if user_data.get("mfa_enabled", False):
                 return True, "MFAが必要です", True  # 認証成功、MFAが必要
             else:
@@ -251,6 +276,59 @@ class UserAuthenticator:
         user_data = self.users.get(username)
         if not user_data or not user_data.get("mfa_enabled", False):
             return None
+    
+    def _generate_encryption_key(self):
+        """
+        ユーザー専用の暗号化キーを生成（32バイト = AES-256）
+        
+        Returns:
+            str: Base64エンコードされた暗号化キー
+        """
+        # 32バイト（256ビット）のランダムキーを生成
+        key_bytes = os.urandom(32)
+        # Base64エンコードして文字列として保存
+        return base64.b64encode(key_bytes).decode('utf-8')
+    
+    def get_user_encryption_key(self, username):
+        """
+        ユーザーの専用暗号化キーを取得
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            bytes: 暗号化キー（バイト形式）、ユーザーが存在しない場合はNone
+        """
+        user_data = self.users.get(username)
+        if user_data and "encryption_key" in user_data:
+            # Base64デコードしてバイト形式で返す
+            try:
+                return base64.b64decode(user_data["encryption_key"])
+            except Exception as e:
+                print(f"[ERROR] 暗号化キーのデコードに失敗: {e}")
+                return None
+        return None
+    
+    def migrate_user_encryption_keys(self):
+        """
+        既存ユーザーに暗号化キーを追加する移行処理
+        
+        Returns:
+            int: 移行されたユーザー数
+        """
+        migrated_count = 0
+        for username, user_data in self.users.items():
+            if "encryption_key" not in user_data:
+                # 暗号化キーが存在しない場合は生成して追加
+                user_data["encryption_key"] = self._generate_encryption_key()
+                migrated_count += 1
+                print(f"[INFO] ユーザー {username} に暗号化キーを追加しました")
+        
+        if migrated_count > 0:
+            self._save_users()
+            print(f"[INFO] {migrated_count}人のユーザーに暗号化キーを追加しました")
+        
+        return migrated_count
         
         # TOTP URIを生成
         totp = pyotp.TOTP(user_data["mfa_secret"])
@@ -303,6 +381,103 @@ class UserAuthenticator:
         user_data = self.users.get(username)
         if not user_data:
             return None
+        
+        try:
+            # WebAuthn登録オプションを生成
+            registration_options = generate_registration_options(
+                rp_id=self.rp_id,
+                rp_name=self.rp_name,
+                user_id=username.encode('utf-8'),
+                user_name=username,
+                user_display_name=username,
+                authenticator_selection=AuthenticatorSelectionCriteria(
+                    user_verification=UserVerificationRequirement.PREFERRED
+                )
+            )
+            
+            # チャレンジをユーザーデータに保存
+            challenge_str = base64.b64encode(registration_options.challenge).decode('utf-8')
+            user_data['webauthn_challenges']['registration'] = challenge_str
+            self._save_users()
+            
+            # オプションを辞書形式で返す
+            return {
+                "challenge": challenge_str,
+                "rp": {"id": self.rp_id, "name": self.rp_name},
+                "user": {
+                    "id": base64.b64encode(username.encode('utf-8')).decode('utf-8'),
+                    "name": username,
+                    "displayName": username
+                },
+                "pubKeyCredParams": [
+                    {"alg": -7, "type": "public-key"},  # ES256
+                    {"alg": -257, "type": "public-key"}  # RS256
+                ],
+                "timeout": 60000,
+                "attestation": "none",
+                "authenticatorSelection": {
+                    "userVerification": "preferred"
+                }
+            }
+            
+        except Exception as e:
+            print(f"[ERROR] WebAuthn登録オプション生成エラー: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def _generate_encryption_key(self):
+        """
+        ユーザー専用の暗号化キーを生成（32バイト = AES-256）
+        
+        Returns:
+            str: Base64エンコードされた暗号化キー
+        """
+        # 32バイト（256ビット）のランダムキーを生成
+        key_bytes = os.urandom(32)
+        # Base64エンコードして文字列として保存
+        return base64.b64encode(key_bytes).decode('utf-8')
+    
+    def get_user_encryption_key(self, username):
+        """
+        ユーザーの専用暗号化キーを取得
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            bytes: 暗号化キー（バイト形式）、ユーザーが存在しない場合はNone
+        """
+        user_data = self.users.get(username)
+        if user_data and "encryption_key" in user_data:
+            # Base64デコードしてバイト形式で返す
+            try:
+                return base64.b64decode(user_data["encryption_key"])
+            except Exception as e:
+                print(f"[ERROR] 暗号化キーのデコードに失敗: {e}")
+                return None
+        return None
+    
+    def migrate_user_encryption_keys(self):
+        """
+        既存ユーザーに暗号化キーを追加する移行処理
+        
+        Returns:
+            int: 移行されたユーザー数
+        """
+        migrated_count = 0
+        for username, user_data in self.users.items():
+            if "encryption_key" not in user_data:
+                # 暗号化キーが存在しない場合は生成して追加
+                user_data["encryption_key"] = self._generate_encryption_key()
+                migrated_count += 1
+                print(f"[INFO] ユーザー {username} に暗号化キーを追加しました")
+        
+        if migrated_count > 0:
+            self._save_users()
+            print(f"[INFO] {migrated_count}人のユーザーに暗号化キーを追加しました")
+        
+        return migrated_count
             
         # ユーザーIDをバイト形式で生成（既存のユーザーには一意なIDを割り当て）
         user_id = hashlib.sha256(username.encode()).digest()[:32]
@@ -346,6 +521,59 @@ class UserAuthenticator:
         except Exception as e:
             print(f"WebAuthn登録オプション生成エラー: {e}")
             return None
+    
+    def _generate_encryption_key(self):
+        """
+        ユーザー専用の暗号化キーを生成（32バイト = AES-256）
+        
+        Returns:
+            str: Base64エンコードされた暗号化キー
+        """
+        # 32バイト（256ビット）のランダムキーを生成
+        key_bytes = os.urandom(32)
+        # Base64エンコードして文字列として保存
+        return base64.b64encode(key_bytes).decode('utf-8')
+    
+    def get_user_encryption_key(self, username):
+        """
+        ユーザーの専用暗号化キーを取得
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            bytes: 暗号化キー（バイト形式）、ユーザーが存在しない場合はNone
+        """
+        user_data = self.users.get(username)
+        if user_data and "encryption_key" in user_data:
+            # Base64デコードしてバイト形式で返す
+            try:
+                return base64.b64decode(user_data["encryption_key"])
+            except Exception as e:
+                print(f"[ERROR] 暗号化キーのデコードに失敗: {e}")
+                return None
+        return None
+    
+    def migrate_user_encryption_keys(self):
+        """
+        既存ユーザーに暗号化キーを追加する移行処理
+        
+        Returns:
+            int: 移行されたユーザー数
+        """
+        migrated_count = 0
+        for username, user_data in self.users.items():
+            if "encryption_key" not in user_data:
+                # 暗号化キーが存在しない場合は生成して追加
+                user_data["encryption_key"] = self._generate_encryption_key()
+                migrated_count += 1
+                print(f"[INFO] ユーザー {username} に暗号化キーを追加しました")
+        
+        if migrated_count > 0:
+            self._save_users()
+            print(f"[INFO] {migrated_count}人のユーザーに暗号化キーを追加しました")
+        
+        return migrated_count
     
     def verify_webauthn_registration_response(self, username, registration_response, challenge):
         """
@@ -455,6 +683,134 @@ class UserAuthenticator:
         user_data = self.users.get(username)
         if not user_data or not user_data.get('webauthn_credentials'):
             return None
+        
+        try:
+            # 登録済み認証器のcredential_idを収集
+            # Base64パディング修正関数
+            def fix_base64_padding(data):
+                """Base64文字列のパディングを修正"""
+                missing_padding = len(data) % 4
+                if missing_padding:
+                    data += '=' * (4 - missing_padding)
+                return data
+            
+            # WebAuthn認証オプションを生成
+            try:
+                allow_credentials = []
+                for cred in user_data['webauthn_credentials']:
+                    try:
+                        credential_id = fix_base64_padding(cred['credential_id'])
+                        decoded_id = base64.b64decode(credential_id)
+                        # WebAuthnライブラリ用にバイト形式で追加
+                        allow_credentials.append({
+                            "id": decoded_id,  # バイト形式
+                            "type": "public-key"
+                        })
+                    except Exception as e:
+                        print(f"[WARNING] 無効な認証器をスキップ: {cred.get('credential_id', 'N/A')[:20]}... エラー: {e}")
+                        continue
+                
+                if not allow_credentials:
+                    print(f"[ERROR] 有効な認証器が見つかりません: {username}")
+                    return None
+                
+                authentication_options = generate_authentication_options(
+                    rp_id=self.rp_id,
+                    allow_credentials=allow_credentials,
+                    user_verification=UserVerificationRequirement.PREFERRED
+                )
+                
+                # チャレンジをユーザーデータに保存
+                challenge_str = base64.b64encode(authentication_options.challenge).decode('utf-8')
+                user_data['webauthn_challenges']['authentication'] = challenge_str
+                self._save_users()
+                
+                # JSON serializable な形式で allowCredentials を再構築
+                serializable_credentials = []
+                for cred in user_data['webauthn_credentials']:
+                    try:
+                        credential_id = fix_base64_padding(cred['credential_id'])
+                        # 検証: デコード可能かチェック
+                        base64.b64decode(credential_id)
+                        serializable_credentials.append({
+                            "id": credential_id,  # Base64文字列
+                            "type": "public-key"
+                        })
+                    except Exception as e:
+                        continue  # 無効なものはスキップ
+                
+                # オプションを辞書形式で返す
+                return {
+                    "challenge": challenge_str,
+                    "timeout": 60000,
+                    "rpId": self.rp_id,
+                    "allowCredentials": serializable_credentials,
+                    "userVerification": "preferred"
+                }
+            except Exception as e:
+                print(f"[ERROR] WebAuthn認証オプション生成エラー（修正後）: {e}")
+                import traceback
+                traceback.print_exc()
+                return None
+            
+        except Exception as e:
+            print(f"[ERROR] WebAuthn認証オプション生成エラー: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def _generate_encryption_key(self):
+        """
+        ユーザー専用の暗号化キーを生成（32バイト = AES-256）
+        
+        Returns:
+            str: Base64エンコードされた暗号化キー
+        """
+        # 32バイト（256ビット）のランダムキーを生成
+        key_bytes = os.urandom(32)
+        # Base64エンコードして文字列として保存
+        return base64.b64encode(key_bytes).decode('utf-8')
+    
+    def get_user_encryption_key(self, username):
+        """
+        ユーザーの専用暗号化キーを取得
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            bytes: 暗号化キー（バイト形式）、ユーザーが存在しない場合はNone
+        """
+        user_data = self.users.get(username)
+        if user_data and "encryption_key" in user_data:
+            # Base64デコードしてバイト形式で返す
+            try:
+                return base64.b64decode(user_data["encryption_key"])
+            except Exception as e:
+                print(f"[ERROR] 暗号化キーのデコードに失敗: {e}")
+                return None
+        return None
+    
+    def migrate_user_encryption_keys(self):
+        """
+        既存ユーザーに暗号化キーを追加する移行処理
+        
+        Returns:
+            int: 移行されたユーザー数
+        """
+        migrated_count = 0
+        for username, user_data in self.users.items():
+            if "encryption_key" not in user_data:
+                # 暗号化キーが存在しない場合は生成して追加
+                user_data["encryption_key"] = self._generate_encryption_key()
+                migrated_count += 1
+                print(f"[INFO] ユーザー {username} に暗号化キーを追加しました")
+        
+        if migrated_count > 0:
+            self._save_users()
+            print(f"[INFO] {migrated_count}人のユーザーに暗号化キーを追加しました")
+        
+        return migrated_count
             
         try:
             # 登録済み認証器のCredential IDを取得
@@ -496,6 +852,59 @@ class UserAuthenticator:
         except Exception as e:
             print(f"WebAuthn認証オプション生成エラー: {e}")
             return None
+    
+    def _generate_encryption_key(self):
+        """
+        ユーザー専用の暗号化キーを生成（32バイト = AES-256）
+        
+        Returns:
+            str: Base64エンコードされた暗号化キー
+        """
+        # 32バイト（256ビット）のランダムキーを生成
+        key_bytes = os.urandom(32)
+        # Base64エンコードして文字列として保存
+        return base64.b64encode(key_bytes).decode('utf-8')
+    
+    def get_user_encryption_key(self, username):
+        """
+        ユーザーの専用暗号化キーを取得
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            bytes: 暗号化キー（バイト形式）、ユーザーが存在しない場合はNone
+        """
+        user_data = self.users.get(username)
+        if user_data and "encryption_key" in user_data:
+            # Base64デコードしてバイト形式で返す
+            try:
+                return base64.b64decode(user_data["encryption_key"])
+            except Exception as e:
+                print(f"[ERROR] 暗号化キーのデコードに失敗: {e}")
+                return None
+        return None
+    
+    def migrate_user_encryption_keys(self):
+        """
+        既存ユーザーに暗号化キーを追加する移行処理
+        
+        Returns:
+            int: 移行されたユーザー数
+        """
+        migrated_count = 0
+        for username, user_data in self.users.items():
+            if "encryption_key" not in user_data:
+                # 暗号化キーが存在しない場合は生成して追加
+                user_data["encryption_key"] = self._generate_encryption_key()
+                migrated_count += 1
+                print(f"[INFO] ユーザー {username} に暗号化キーを追加しました")
+        
+        if migrated_count > 0:
+            self._save_users()
+            print(f"[INFO] {migrated_count}人のユーザーに暗号化キーを追加しました")
+        
+        return migrated_count
     
     def verify_webauthn_authentication_response(self, username, authentication_response, challenge):
         """
@@ -621,6 +1030,59 @@ class UserAuthenticator:
         user_data = self.users.get(username)
         if not user_data:
             return None
+    
+    def _generate_encryption_key(self):
+        """
+        ユーザー専用の暗号化キーを生成（32バイト = AES-256）
+        
+        Returns:
+            str: Base64エンコードされた暗号化キー
+        """
+        # 32バイト（256ビット）のランダムキーを生成
+        key_bytes = os.urandom(32)
+        # Base64エンコードして文字列として保存
+        return base64.b64encode(key_bytes).decode('utf-8')
+    
+    def get_user_encryption_key(self, username):
+        """
+        ユーザーの専用暗号化キーを取得
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            bytes: 暗号化キー（バイト形式）、ユーザーが存在しない場合はNone
+        """
+        user_data = self.users.get(username)
+        if user_data and "encryption_key" in user_data:
+            # Base64デコードしてバイト形式で返す
+            try:
+                return base64.b64decode(user_data["encryption_key"])
+            except Exception as e:
+                print(f"[ERROR] 暗号化キーのデコードに失敗: {e}")
+                return None
+        return None
+    
+    def migrate_user_encryption_keys(self):
+        """
+        既存ユーザーに暗号化キーを追加する移行処理
+        
+        Returns:
+            int: 移行されたユーザー数
+        """
+        migrated_count = 0
+        for username, user_data in self.users.items():
+            if "encryption_key" not in user_data:
+                # 暗号化キーが存在しない場合は生成して追加
+                user_data["encryption_key"] = self._generate_encryption_key()
+                migrated_count += 1
+                print(f"[INFO] ユーザー {username} に暗号化キーを追加しました")
+        
+        if migrated_count > 0:
+            self._save_users()
+            print(f"[INFO] {migrated_count}人のユーザーに暗号化キーを追加しました")
+        
+        return migrated_count
         
         # セキュリティのためパスワードとMFAシークレットを除外
         safe_user_data = {
@@ -681,7 +1143,69 @@ class UserAuthenticator:
         return True, "MFAが無効化されました"
 
 
-# デモ用実行部分
+    def derive_encryption_key(self, password, salt, key_length=32):
+        """
+        ユーザーパスワードから暗号化鍵を導出（クライアントサイド暗号化用）
+        
+        Args:
+            password (str): ユーザーのパスワード
+            salt (str): ソルト（16進数文字列またはBase64文字列）
+            key_length (int): 導出する鍵の長さ（バイト数、デフォルト: 32バイト = 256ビット）
+            
+        Returns:
+            bytes: 導出された暗号化鍵
+        """
+        try:
+            # ソルトをバイト列に変換
+            if isinstance(salt, str):
+                try:
+                    # 16進数文字列として試行
+                    salt_bytes = bytes.fromhex(salt)
+                except ValueError:
+                    try:
+                        # Base64文字列として試行
+                        import base64
+                        salt_bytes = base64.b64decode(salt)
+                    except:
+                        # UTF-8エンコードで試行
+                        salt_bytes = salt.encode('utf-8')
+            else:
+                salt_bytes = salt
+            
+            # PBKDF2-SHA256を使用して鍵を導出（passlibではなくhashlibを使用）
+            # 暗号化鍵の導出には一貫性が重要なため、hashlibのpbkdf2_hmacを使用
+            derived_key = hashlib.pbkdf2_hmac(
+                'sha256',  # ハッシュアルゴリズム
+                password.encode('utf-8'),  # パスワードをバイト列にエンコード
+                salt_bytes,  # ソルト
+                100000,  # イテレーション回数（NIST推奨値）
+                key_length  # 鍵の長さ
+            )
+            
+            return derived_key
+            
+        except Exception as e:
+            print(f"[ERROR] 暗号化鍵の導出に失敗: {e}")
+            # フォールバック: パスワードとソルトからSHA-256ハッシュを生成
+            fallback_data = f"{password}:{salt}".encode('utf-8')
+            fallback_hash = hashlib.sha256(fallback_data).digest()
+            return fallback_hash[:key_length]
+
+    def get_user_encryption_salt(self, username):
+        """
+        ユーザーの暗号化用ソルトを取得
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            str: ソルト（16進数文字列）、ユーザーが存在しない場合はNone
+        """
+        user_data = self.users.get(username)
+        if user_data:
+            return user_data.get("salt")
+        return None
+
 if __name__ == "__main__":
     print("SecHack365 認証システム（MFA対応版） - デモンストレーション")
     print("=" * 60)

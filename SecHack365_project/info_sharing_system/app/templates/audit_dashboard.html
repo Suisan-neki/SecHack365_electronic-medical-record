@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>監査ログダッシュボード - SecHack365 医療DXシステム</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-card .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 0;
+        }
+        
+        .log-filters {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-weight: bold;
+            color: #333;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .log-table-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .log-table th {
+            background: #f8f9fa;
+            color: #333;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e1e5e9;
+        }
+        
+        .log-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e1e5e9;
+            font-size: 14px;
+        }
+        
+        .log-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-failure {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .event-id {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .user-role-doctor { color: #007bff; font-weight: bold; }
+        .user-role-nurse { color: #28a745; font-weight: bold; }
+        .user-role-patient { color: #ffc107; font-weight: bold; }
+        .user-role-admin { color: #dc3545; font-weight: bold; }
+        
+        .refresh-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin-left: 15px;
+        }
+        
+        .refresh-button:hover {
+            background: #5a6fd8;
+        }
+        
+        .no-logs {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            gap: 10px;
+        }
+        
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .pagination button:hover {
+            background: #f8f9fa;
+        }
+        
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>🔍 監査ログダッシュボード</h1>
+            <p>システムのセキュリティイベントと活動を監視</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>総イベント数</h3>
+                <p class="stat-number" id="totalEvents">-</p>
+            </div>
+            <div class="stat-card">
+                <h3>成功イベント</h3>
+                <p class="stat-number" id="successEvents">-</p>
+            </div>
+            <div class="stat-card">
+                <h3>失敗イベント</h3>
+                <p class="stat-number" id="failureEvents">-</p>
+            </div>
+            <div class="stat-card">
+                <h3>アクティブユーザー</h3>
+                <p class="stat-number" id="activeUsers">-</p>
+            </div>
+        </div>
+        
+        <div class="log-filters">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>イベントタイプ</label>
+                    <select id="eventFilter">
+                        <option value="">すべて</option>
+                        <option value="AUTH_LOGIN">ログイン</option>
+                        <option value="AUTH_LOGOUT">ログアウト</option>
+                        <option value="DATA_ACCESS">データアクセス</option>
+                        <option value="WEBAUTHN">WebAuthn</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>ステータス</label>
+                    <select id="statusFilter">
+                        <option value="">すべて</option>
+                        <option value="SUCCESS">成功</option>
+                        <option value="FAILURE">失敗</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>ユーザー</label>
+                    <select id="userFilter">
+                        <option value="">すべて</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>日付範囲</label>
+                    <input type="date" id="dateFrom">
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <input type="date" id="dateTo">
+                </div>
+                <button class="refresh-button" onclick="loadAuditLogs()">🔄 更新</button>
+            </div>
+        </div>
+        
+        <div class="log-table-container">
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>時刻</th>
+                        <th>イベントID</th>
+                        <th>ユーザー</th>
+                        <th>ロール</th>
+                        <th>アクション</th>
+                        <th>リソース</th>
+                        <th>ステータス</th>
+                        <th>IPアドレス</th>
+                        <th>メッセージ</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody">
+                    <tr>
+                        <td colspan="9" class="no-logs">監査ログを読み込み中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="pagination" id="pagination">
+            <!-- ページネーション buttons will be inserted here -->
+        </div>
+        
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="{{ url_for('index') }}" class="refresh-button">🏠 ダッシュボードに戻る</a>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        let allLogs = [];
+        let filteredLogs = [];
+
+        // ページ読み込み時に監査ログを取得
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAuditLogs();
+            
+            // フィルターの変更時にログを更新
+            document.getElementById('eventFilter').addEventListener('change', filterLogs);
+            document.getElementById('statusFilter').addEventListener('change', filterLogs);
+            document.getElementById('userFilter').addEventListener('change', filterLogs);
+            document.getElementById('dateFrom').addEventListener('change', filterLogs);
+            document.getElementById('dateTo').addEventListener('change', filterLogs);
+        });
+
+        async function loadAuditLogs() {
+            try {
+                const response = await fetch('/api/audit-logs');
+                if (response.ok) {
+                    const data = await response.json();
+                    allLogs = data.logs || [];
+                    updateStats(data.stats || {});
+                    updateUserFilter();
+                    filterLogs();
+                } else {
+                    console.error('監査ログの取得に失敗しました:', response.status);
+                    showNoLogsMessage('監査ログの取得に失敗しました');
+                }
+            } catch (error) {
+                console.error('監査ログの取得エラー:', error);
+                showNoLogsMessage('監査ログファイルが見つかりません');
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('totalEvents').textContent = stats.total || 0;
+            document.getElementById('successEvents').textContent = stats.success || 0;
+            document.getElementById('failureEvents').textContent = stats.failure || 0;
+            document.getElementById('activeUsers').textContent = stats.activeUsers || 0;
+        }
+
+        function updateUserFilter() {
+            const userFilter = document.getElementById('userFilter');
+            const users = [...new Set(allLogs.map(log => log.user_id))];
+            
+            // 既存のオプションをクリア（最初の「すべて」以外）
+            userFilter.innerHTML = '<option value="">すべて</option>';
+            
+            users.forEach(user => {
+                if (user && user !== 'anonymous') {
+                    const option = document.createElement('option');
+                    option.value = user;
+                    option.textContent = user;
+                    userFilter.appendChild(option);
+                }
+            });
+        }
+
+        function filterLogs() {
+            const eventFilter = document.getElementById('eventFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const userFilter = document.getElementById('userFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+
+            filteredLogs = allLogs.filter(log => {
+                if (eventFilter && !log.event_id.includes(eventFilter)) return false;
+                if (statusFilter && log.status !== statusFilter) return false;
+                if (userFilter && log.user_id !== userFilter) return false;
+                
+                if (dateFrom || dateTo) {
+                    const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+                    if (dateFrom && logDate < dateFrom) return false;
+                    if (dateTo && logDate > dateTo) return false;
+                }
+                
+                return true;
+            });
+
+            currentPage = 1;
+            displayLogs();
+        }
+
+        function displayLogs() {
+            const logsPerPage = 50;
+            totalPages = Math.ceil(filteredLogs.length / logsPerPage);
+            const startIndex = (currentPage - 1) * logsPerPage;
+            const endIndex = startIndex + logsPerPage;
+            const logsToShow = filteredLogs.slice(startIndex, endIndex);
+
+            const tbody = document.getElementById('logTableBody');
+            
+            if (logsToShow.length === 0) {
+                showNoLogsMessage('条件に一致する監査ログがありません');
+                return;
+            }
+
+            tbody.innerHTML = logsToShow.map(log => `
+                <tr>
+                    <td>${formatTimestamp(log.timestamp)}</td>
+                    <td><span class="event-id">${log.event_id}</span></td>
+                    <td>${log.user_id}</td>
+                    <td><span class="user-role-${log.user_role}">${log.user_role}</span></td>
+                    <td>${log.action}</td>
+                    <td>${log.resource}</td>
+                    <td><span class="status-${log.status.toLowerCase()}">${log.status}</span></td>
+                    <td>${log.ip_address}</td>
+                    <td>${log.message}</td>
+                </tr>
+            `).join('');
+
+            updatePagination();
+        }
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function showNoLogsMessage(message) {
+            const tbody = document.getElementById('logTableBody');
+            tbody.innerHTML = `<tr><td colspan="9" class="no-logs">${message}</td></tr>`;
+            document.getElementById('pagination').innerHTML = '';
+        }
+
+        function updatePagination() {
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+            
+            // Previous button
+            if (currentPage > 1) {
+                paginationHTML += `<button onclick="changePage(${currentPage - 1})">« 前へ</button>`;
+            }
+            
+            // Page numbers
+            for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+                const isActive = i === currentPage ? 'active' : '';
+                paginationHTML += `<button class="${isActive}" onclick="changePage(${i})">${i}</button>`;
+            }
+            
+            if (totalPages > 10) {
+                paginationHTML += '<span>...</span>';
+            }
+            
+            // Next button
+            if (currentPage < totalPages) {
+                paginationHTML += `<button onclick="changePage(${currentPage + 1})">次へ »</button>`;
+            }
+            
+            pagination.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            displayLogs();
+        }
+    </script>
+</body>
+</html>

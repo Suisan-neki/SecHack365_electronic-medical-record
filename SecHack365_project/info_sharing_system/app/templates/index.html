@@ -27,6 +27,9 @@
             </div>
             <div class="user-actions">
                 {% if current_user.is_authenticated %}
+                {% if current_user.role == 'admin' or current_user.role == 'doctor' %}
+                <a href="{{ url_for('audit_dashboard') }}" style="background: #667eea; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔍 監査ログ</a>
+                {% endif %}
                 <a href="{{ url_for('webauthn_register') }}" style="background: #28a745; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔐 WebAuthn登録</a>
                 <a href="{{ url_for('logout') }}" style="background: #e53e3e; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em;">ログアウト</a>
                 {% else %}
