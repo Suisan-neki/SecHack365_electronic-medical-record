@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>診療ディスプレイ</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='accessibility.css') }}">
 </head>
-<body>
+<body {% if current_user.is_authenticated %}data-user-role="{{ current_user.role }}"{% endif %}>
     <div id="private-view">
         <div class="user-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
             <div class="user-info">
@@ -27,9 +28,9 @@
             </div>
             <div class="user-actions">
                 {% if current_user.is_authenticated %}
-                {% if current_user.role == 'admin' or current_user.role == 'doctor' %}
-                <a href="{{ url_for('audit_dashboard') }}" style="background: #667eea; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔍 監査ログ</a>
-                {% endif %}
+            {% if current_user.role == 'admin' or current_user.role == 'doctor' %}
+            <a href="{{ url_for('audit_dashboard') }}" style="background: #667eea; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔍 監査ログ</a>
+            {% endif %}
                 <a href="{{ url_for('webauthn_register') }}" style="background: #28a745; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔐 WebAuthn登録</a>
                 <a href="{{ url_for('logout') }}" style="background: #e53e3e; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em;">ログアウト</a>
                 {% else %}
@@ -213,5 +214,7 @@
     </div>
 
     <script src="{{ url_for('static', filename='script_new.js') }}"></script>
+    <script src="{{ url_for('static', filename='accessibility.js') }}"></script>
+    <script src="{{ url_for('static', filename='google_translate.js') }}"></script>
 </body>
 </html>

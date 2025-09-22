@@ -61,35 +61,6 @@
             max-width: 100%;
             height: auto;
         }
-        .demo-info {
-            background: #fffbeb;
-            border: 1px solid #fed7aa;
-            border-radius: 8px;
-            padding: 16px;
-            margin-top: 20px;
-            text-align: left;
-        }
-        .demo-info h4 {
-            color: #92400e;
-            font-size: 0.9em;
-            margin-bottom: 8px;
-        }
-        .demo-info p {
-            color: #a16207;
-            font-size: 0.8em;
-            margin: 0;
-        }
-        .current-code {
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            font-size: 1.2em;
-            color: #059669;
-            background: #d1fae5;
-            padding: 8px 16px;
-            border-radius: 6px;
-            margin: 10px 0;
-            display: inline-block;
-        }
     </style>
 </head>
 <body>
@@ -111,12 +82,6 @@
             <p class="error-message">{{ error }}</p>
         {% endif %}
         
-        <div class="demo-info">
-            <h4>デモ用情報</h4>
-            <p>現在の有効なTOTPコード:</p>
-            <div class="current-code" id="current-code">生成中...</div>
-            <p>※ 実際の運用では表示されません</p>
-        </div>
         
         <div style="margin-top: 20px;">
             <a href="{{ url_for('login') }}" style="color: #007bff; text-decoration: none;">← ログイン画面に戻る</a>
@@ -124,19 +89,6 @@
     </div>
 
     <script>
-        // デモ用のTOTPコード表示（実際のMFAシークレットから生成）
-        function updateDemoCode() {
-            // 簡易的なデモコード生成（実際にはサーバーから取得）
-            const now = Math.floor(Date.now() / 1000);
-            const timeStep = Math.floor(now / 30);
-            const code = String(timeStep % 1000000).padStart(6, '0');
-            document.getElementById('current-code').textContent = code;
-        }
-        
-        // 初回表示とタイマー設定
-        updateDemoCode();
-        setInterval(updateDemoCode, 1000);
-        
         // MFAコード入力時の自動フォーマット
         document.getElementById('mfa_code').addEventListener('input', function(e) {
             const value = e.target.value.replace(/\D/g, ''); // 数字のみ

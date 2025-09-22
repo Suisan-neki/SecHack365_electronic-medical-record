@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー管理 - SecHack365 PHR System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .management-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .management-header {
+            background: linear-gradient(135deg, #f56565, #ff6b6b);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .management-nav {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-button {
+            background: #4299e1;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        
+        .nav-button:hover {
+            background: #3182ce;
+            transform: translateY(-2px);
+        }
+        
+        .nav-button.active {
+            background: #2d3748;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4299e1;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .users-table-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            background: #f7fafc;
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .search-box {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            width: 250px;
+        }
+        
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .users-table th,
+        .users-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .users-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .users-table tr:hover {
+            background: #f7fafc;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-inactive {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .role-admin {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .role-doctor {
+            background: #bee3f8;
+            color: #2a4365;
+        }
+        
+        .role-nurse {
+            background: #d6f5d6;
+            color: #22543d;
+        }
+        
+        .role-patient {
+            background: #e6fffa;
+            color: #234e52;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn.edit {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .action-btn.deactivate {
+            background: #f56565;
+            color: white;
+        }
+        
+        .action-btn.activate {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error-message {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .success-message {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #4299e1;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="management-container">
+        <a href="{{ url_for('index') }}" class="back-link">← ダッシュボードに戻る</a>
+        
+        <div class="management-header">
+            <h1>👥 ユーザー管理システム</h1>
+            <p>システムユーザーの管理・監視・設定</p>
+        </div>
+        
+        <div class="management-nav">
+            <button class="nav-button active" onclick="showUserList()">👥 ユーザー一覧</button>
+            <a href="{{ url_for('register_user') }}" class="nav-button">➕ 新規登録</a>
+            <button class="nav-button" onclick="showStats()">📊 統計情報</button>
+            <button class="nav-button" onclick="refreshData()">🔄 更新</button>
+        </div>
+        
+        <div id="error-container"></div>
+        <div id="success-container"></div>
+        
+        <!-- 統計情報 -->
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="total-users">-</div>
+                <div class="stat-label">総ユーザー数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="active-users">-</div>
+                <div class="stat-label">アクティブユーザー</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="mfa-enabled">-</div>
+                <div class="stat-label">MFA有効ユーザー</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="webauthn-users">-</div>
+                <div class="stat-label">WebAuthn登録済み</div>
+            </div>
+        </div>
+        
+        <!-- ユーザー一覧テーブル -->
+        <div class="users-table-container">
+            <div class="table-header">
+                <h3>ユーザー一覧</h3>
+                <input type="text" class="search-box" placeholder="ユーザー名、メール、役割で検索..." id="search-input">
+            </div>
+            
+            <div id="loading" class="loading" style="display: none;">
+                <p>データを読み込み中...</p>
+            </div>
+            
+            <table class="users-table" id="users-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>ユーザー名</th>
+                        <th>フルネーム</th>
+                        <th>メール</th>
+                        <th>役割</th>
+                        <th>ステータス</th>
+                        <th>MFA</th>
+                        <th>WebAuthn</th>
+                        <th>最終ログイン</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let usersData = [];
+        let filteredUsers = [];
+        
+        // ページ読み込み時にデータを取得
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUsers();
+            
+            // 検索機能
+            document.getElementById('search-input').addEventListener('input', function(e) {
+                filterUsers(e.target.value);
+            });
+        });
+        
+        // ユーザーデータを読み込み
+        async function loadUsers() {
+            showLoading(true);
+            clearMessages();
+            
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                
+                if (data.success) {
+                    usersData = data.users;
+                    filteredUsers = [...usersData];
+                    renderUsers();
+                    updateStats();
+                } else {
+                    showError(data.message || 'ユーザーデータの取得に失敗しました');
+                }
+            } catch (error) {
+                showError('サーバーエラーが発生しました: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // ユーザーテーブルを描画
+        function renderUsers() {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+            
+            filteredUsers.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${user.username}</strong></td>
+                    <td>${user.full_name || '-'}</td>
+                    <td>${user.email || '-'}</td>
+                    <td><span class="role-badge role-${user.role}">${getRoleDisplayName(user.role)}</span></td>
+                    <td><span class="status-badge ${user.is_active ? 'status-active' : 'status-inactive'}">
+                        ${user.is_active ? 'アクティブ' : '無効'}
+                    </span></td>
+                    <td>${user.mfa_enabled ? '✅' : '❌'}</td>
+                    <td>${user.webauthn_credentials_count > 0 ? `✅ (${user.webauthn_credentials_count})` : '❌'}</td>
+                    <td>${formatDate(user.last_login)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn edit" onclick="editUser('${user.username}')">編集</button>
+                            ${user.is_active ? 
+                                `<button class="action-btn deactivate" onclick="toggleUserStatus('${user.username}', 'deactivate')">無効化</button>` :
+                                `<button class="action-btn activate" onclick="toggleUserStatus('${user.username}', 'reactivate')">有効化</button>`
+                            }
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            document.getElementById('users-table').style.display = 'table';
+        }
+        
+        // 統計情報を更新
+        function updateStats() {
+            const totalUsers = usersData.length;
+            const activeUsers = usersData.filter(u => u.is_active).length;
+            const mfaEnabledUsers = usersData.filter(u => u.mfa_enabled).length;
+            const webauthnUsers = usersData.filter(u => u.webauthn_credentials_count > 0).length;
+            
+            document.getElementById('total-users').textContent = totalUsers;
+            document.getElementById('active-users').textContent = activeUsers;
+            document.getElementById('mfa-enabled').textContent = mfaEnabledUsers;
+            document.getElementById('webauthn-users').textContent = webauthnUsers;
+        }
+        
+        // ユーザーフィルタリング
+        function filterUsers(searchTerm) {
+            const term = searchTerm.toLowerCase();
+            filteredUsers = usersData.filter(user => 
+                user.username.toLowerCase().includes(term) ||
+                (user.full_name && user.full_name.toLowerCase().includes(term)) ||
+                (user.email && user.email.toLowerCase().includes(term)) ||
+                user.role.toLowerCase().includes(term)
+            );
+            renderUsers();
+        }
+        
+        // ユーザーステータス切り替え
+        async function toggleUserStatus(username, action) {
+            const actionText = action === 'deactivate' ? '無効化' : '有効化';
+            
+            if (!confirm(`ユーザー "${username}" を${actionText}しますか？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/user/${username}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: action })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(data.message);
+                    loadUsers(); // データを再読み込み
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                showError('操作中にエラーが発生しました: ' + error.message);
+            }
+        }
+        
+        // ユーザー編集（プレースホルダー）
+        function editUser(username) {
+            alert(`ユーザー "${username}" の編集機能は開発中です`);
+        }
+        
+        // データ更新
+        function refreshData() {
+            loadUsers();
+        }
+        
+        // ユーザー一覧表示
+        function showUserList() {
+            // 現在は常に表示されているが、将来的にタブ機能を追加する場合に使用
+        }
+        
+        // 統計情報表示
+        function showStats() {
+            alert('詳細統計機能は開発中です');
+        }
+        
+        // ローディング表示切り替え
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('users-table').style.display = show ? 'none' : 'table';
+        }
+        
+        // エラーメッセージ表示
+        function showError(message) {
+            const container = document.getElementById('error-container');
+            container.innerHTML = `<div class="error-message">${message}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+        
+        // 成功メッセージ表示
+        function showSuccess(message) {
+            const container = document.getElementById('success-container');
+            container.innerHTML = `<div class="success-message">${message}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+        
+        // メッセージクリア
+        function clearMessages() {
+            document.getElementById('error-container').innerHTML = '';
+            document.getElementById('success-container').innerHTML = '';
+        }
+        
+        // 役割表示名取得
+        function getRoleDisplayName(role) {
+            const roleNames = {
+                'admin': '管理者',
+                'doctor': '医師',
+                'nurse': '看護師',
+                'patient': '患者'
+            };
+            return roleNames[role] || role;
+        }
+        
+        // 日付フォーマット
+        function formatDate(dateString) {
+            if (!dateString || dateString === 'null') return '-';
+            
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('ja-JP') + ' ' + date.toLocaleTimeString('ja-JP', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                return '-';
+            }
+        }
+    </script>
+</body>
+</html>
