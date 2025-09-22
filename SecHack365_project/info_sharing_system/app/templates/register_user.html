@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新規ユーザー登録 - SecHack365 PHR System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .register-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .register-header {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .register-form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        
+        .form-help {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .password-requirements {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .requirement {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .requirement.valid {
+            color: #22543d;
+        }
+        
+        .requirement.invalid {
+            color: #742a2a;
+        }
+        
+        .requirement-icon {
+            margin-right: 8px;
+            font-weight: bold;
+        }
+        
+        .submit-button {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+        
+        .submit-button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .error-message {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .success-message {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #4299e1;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .loading-spinner {
+            display: none;
+            margin-right: 10px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <a href="{{ url_for('user_management_dashboard') }}" class="back-link">← ユーザー管理に戻る</a>
+        
+        <div class="register-header">
+            <h1>➕ 新規ユーザー登録</h1>
+            <p>システムに新しいユーザーを追加します</p>
+        </div>
+        
+        <div id="error-message" class="error-message"></div>
+        <div id="success-message" class="success-message"></div>
+        
+        <form class="register-form" id="register-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="username" class="form-label">ユーザー名 *</label>
+                    <input type="text" id="username" name="username" class="form-input" required>
+                    <div class="form-help">半角英数字、3-20文字</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="role" class="form-label">役割 *</label>
+                    <select id="role" name="role" class="form-select" required>
+                        <option value="">選択してください</option>
+                        <option value="patient">患者</option>
+                        <option value="nurse">看護師</option>
+                        <option value="doctor">医師</option>
+                        <option value="admin">管理者</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="full_name" class="form-label">フルネーム</label>
+                <input type="text" id="full_name" name="full_name" class="form-input">
+                <div class="form-help">表示名として使用されます</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="email" class="form-label">メールアドレス *</label>
+                <input type="email" id="email" name="email" class="form-input" required>
+                <div class="form-help">通知やパスワードリセットに使用されます</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone" class="form-label">電話番号</label>
+                <input type="tel" id="phone" name="phone" class="form-input">
+                <div class="form-help">緊急連絡先として使用されます</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password" class="form-label">パスワード *</label>
+                <input type="password" id="password" name="password" class="form-input" required>
+                
+                <div class="password-requirements" id="password-requirements">
+                    <div class="requirement" id="req-length">
+                        <span class="requirement-icon">❌</span>
+                        <span>8文字以上</span>
+                    </div>
+                    <div class="requirement" id="req-uppercase">
+                        <span class="requirement-icon">❌</span>
+                        <span>大文字を含む</span>
+                    </div>
+                    <div class="requirement" id="req-lowercase">
+                        <span class="requirement-icon">❌</span>
+                        <span>小文字を含む</span>
+                    </div>
+                    <div class="requirement" id="req-number">
+                        <span class="requirement-icon">❌</span>
+                        <span>数字を含む</span>
+                    </div>
+                    <div class="requirement" id="req-special">
+                        <span class="requirement-icon">❌</span>
+                        <span>特殊文字を含む (!@#$%^&*()_+-=[]{}|;:,.<>?)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">パスワード確認 *</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-input" required>
+                <div class="form-help" id="password-match-help">パスワードを再入力してください</div>
+            </div>
+            
+            <button type="submit" class="submit-button" id="submit-button" disabled>
+                <span class="loading-spinner" id="loading-spinner">⏳</span>
+                ユーザーを登録
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('register-form');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        const submitButton = document.getElementById('submit-button');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        
+        // パスワード要件チェック
+        const requirements = {
+            length: { element: document.getElementById('req-length'), test: (pwd) => pwd.length >= 8 },
+            uppercase: { element: document.getElementById('req-uppercase'), test: (pwd) => /[A-Z]/.test(pwd) },
+            lowercase: { element: document.getElementById('req-lowercase'), test: (pwd) => /[a-z]/.test(pwd) },
+            number: { element: document.getElementById('req-number'), test: (pwd) => /\d/.test(pwd) },
+            special: { element: document.getElementById('req-special'), test: (pwd) => /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(pwd) }
+        };
+        
+        // パスワード入力時の要件チェック
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            let allValid = true;
+            
+            Object.keys(requirements).forEach(key => {
+                const req = requirements[key];
+                const isValid = req.test(password);
+                
+                if (isValid) {
+                    req.element.classList.add('valid');
+                    req.element.classList.remove('invalid');
+                    req.element.querySelector('.requirement-icon').textContent = '✅';
+                } else {
+                    req.element.classList.add('invalid');
+                    req.element.classList.remove('valid');
+                    req.element.querySelector('.requirement-icon').textContent = '❌';
+                    allValid = false;
+                }
+            });
+            
+            checkFormValidity();
+        });
+        
+        // パスワード確認チェック
+        confirmPasswordInput.addEventListener('input', function() {
+            const password = passwordInput.value;
+            const confirmPassword = this.value;
+            const helpElement = document.getElementById('password-match-help');
+            
+            if (confirmPassword === '') {
+                helpElement.textContent = 'パスワードを再入力してください';
+                helpElement.style.color = '#666';
+            } else if (password === confirmPassword) {
+                helpElement.textContent = '✅ パスワードが一致しています';
+                helpElement.style.color = '#22543d';
+            } else {
+                helpElement.textContent = '❌ パスワードが一致しません';
+                helpElement.style.color = '#742a2a';
+            }
+            
+            checkFormValidity();
+        });
+        
+        // フォームの有効性チェック
+        function checkFormValidity() {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const role = document.getElementById('role').value;
+            
+            // パスワード要件チェック
+            const passwordValid = Object.keys(requirements).every(key => requirements[key].test(password));
+            
+            // パスワード一致チェック
+            const passwordMatch = password === confirmPassword && confirmPassword !== '';
+            
+            // 必須フィールドチェック
+            const requiredFieldsValid = username.trim() !== '' && email.trim() !== '' && role !== '';
+            
+            submitButton.disabled = !(passwordValid && passwordMatch && requiredFieldsValid);
+        }
+        
+        // フォーム送信
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const data = {
+                username: formData.get('username').trim(),
+                password: formData.get('password'),
+                email: formData.get('email').trim(),
+                role: formData.get('role'),
+                full_name: formData.get('full_name').trim(),
+                phone: formData.get('phone').trim()
+            };
+            
+            // 送信中UI
+            submitButton.disabled = true;
+            loadingSpinner.style.display = 'inline';
+            hideMessages();
+            
+            try {
+                const response = await fetch('/register-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess(`ユーザー "${data.username}" が正常に登録されました！`);
+                    form.reset();
+                    checkFormValidity();
+                    
+                    // 3秒後にユーザー管理画面にリダイレクト
+                    setTimeout(() => {
+                        window.location.href = '/user-management';
+                    }, 3000);
+                } else {
+                    showError(result.message || '登録に失敗しました');
+                }
+            } catch (error) {
+                showError('サーバーエラーが発生しました: ' + error.message);
+            } finally {
+                submitButton.disabled = false;
+                loadingSpinner.style.display = 'none';
+                checkFormValidity();
+            }
+        });
+        
+        // エラーメッセージ表示
+        function showError(message) {
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            errorElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // 成功メッセージ表示
+        function showSuccess(message) {
+            const successElement = document.getElementById('success-message');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            successElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // メッセージ非表示
+        function hideMessages() {
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('success-message').style.display = 'none';
+        }
+        
+        // 初期状態でフォーム有効性をチェック
+        document.addEventListener('DOMContentLoaded', function() {
+            // 全ての入力フィールドにイベントリスナーを追加
+            ['username', 'email', 'role'].forEach(fieldId => {
+                document.getElementById(fieldId).addEventListener('input', checkFormValidity);
+            });
+            
+            checkFormValidity();
+        });
+    </script>
+</body>
+</html>

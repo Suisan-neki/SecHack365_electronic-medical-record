@@ -1,0 +1,17 @@
+{
+    "encrypted_data": "GPrrHrFcHURY2msKZpJ7s105iy0+aP0frETi3N8HOjMWoySCnjLz1+6T89BdfdFtCx9uZc2PncxvC1WgTxwFwS2XPChh8tHGlx0AMG1jWK3F3OMsEOcNmuaBnJvVXfyIfyxFQeV07It/2nM6PQfoNKp7uVJU23bDOT+HfC6HBhFGOD9OQvLU4ugsrWVHTUv35/nYMvuOJp8OUKT941a15xTZRZSpH9RMxAWSEE82uJcjqWzlX4VNFUY9DaVVBzOGavx+l8JW13dgBGvajyED+as+LJBeMwahakGRCF9LR3CuYM9cSZ4Rzd1u3KqolPqWAc+YVv3o7hKLcAXZLZqJfrHVy4g9zOJrWKzhGsMGbCERlAwJNtEhmxCaC9wY8Qw57gEX63TAGAAhp39Ed2B/tdbW1UqjfAIsnBn4ARzTELRjwRxdmaQYfEi+l6DoAqxLwl+S2keeBAxfCWkyQgsqmb8eI0E7WpFLNJTiJd96HAMFg1aZ/JxvMSEVW4dqqTSfXR/oyguuBKJmjxdNnixUK/g5xNt5i6XaATGRGbyeaEOcmW/sD6lmLiHMlZSM5wz+diTuxZ2vTOoGf/BbLpwe/rBACtH9Gaotx8ABLeGemPCWMAU043U=",
+    "encryption_info": {
+        "algorithm": "AES",
+        "mode": "GCM (Galois/Counter Mode)",
+        "key_size": 256,
+        "encryption_type": "AES-256",
+        "features": [
+            "認証付き暗号化",
+            "改ざん検知",
+            "ランダムIV",
+            "Base64エンコード"
+        ]
+    },
+    "last_updated": "2025-09-22T18:04:34.448203",
+    "version": "1.0"
+}

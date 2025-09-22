@@ -23,9 +23,9 @@ if __name__ == '__main__':
     print("SecHack365 患者中心の医療DXプロジェクト - 情報共有システム")
     print("プロジェクトルート:", project_root)
     print("モノレポルート:", monorepo_root)
-    print("HTTPS サーバーを起動中...")
-    print("ブラウザで https://localhost:5000 にアクセスしてください")
-    print("自己署名証明書のため、ブラウザで「安全でない」警告が表示される場合があります")
+    print("HTTP サーバーを起動中...")
+    print("ブラウザで http://localhost:5001 にアクセスしてください")
+    print("SSL証明書を一時的に無効化しています")
     print("=" * 60)
     
     # SSL証明書のディレクトリを作成
@@ -68,14 +68,23 @@ if __name__ == '__main__':
             print("[INFO] 手動で証明書を生成してください")
             sys.exit(1)
     
+    # 証明書の有無に関係なく、HTTPでアプリケーションを起動
     try:
+        print("[INFO] アプリケーションをポート5001で起動します（HTTP）")
+        print("ブラウザで http://localhost:5001 にアクセスしてください")
+        print("[WARNING] SSL証明書を一時的に無効化しています")
+        print("[DEBUG] Flask app.run() を呼び出し中...")
+        
         app.run(
             debug=True,
-            host='localhost',
-            port=5000,
-            ssl_context=(cert_path, key_path)
+            host='0.0.0.0',  # localhost から 0.0.0.0 に変更
+            port=5001,
+            use_reloader=False  # リローダーを無効化
+            # ssl_context=(cert_path, key_path)  # 一時的にコメントアウト
         )
     except Exception as e:
         print(f"[ERROR] サーバー起動エラー: {e}")
+        import traceback
+        traceback.print_exc()
         print("[HINT] 仮想環境がアクティブになっているか確認してください")
         print("[HINT] 必要なパッケージがインストールされているか確認してください")

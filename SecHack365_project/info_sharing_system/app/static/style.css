@@ -34,6 +34,34 @@ h1, h2, h3 {
     border-left: 4px solid #a5d6a7;
 }
 
+/* 操作履歴のスタイル */
+.history-item {
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.9em;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.history-time {
+    color: #6c757d;
+    font-weight: 500;
+    min-width: 80px;
+}
+
+.history-operation {
+    color: #495057;
+    flex: 1;
+}
+
+.history-patient {
+    color: #007bff;
+    font-weight: 500;
+}
+
 #patient-view h1 {
     color: #000000;
     font-size: 2em;

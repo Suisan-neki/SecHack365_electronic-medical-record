@@ -1,0 +1,185 @@
+/* 患者向けアクセシビリティスタイル */
+
+/* 患者ビュー用の大きな文字・太字設定 */
+.patient-accessibility-mode {
+    font-size: 1.4em !important;
+    font-weight: 600 !important;
+    line-height: 1.8 !important;
+    letter-spacing: 0.05em !important;
+}
+
+.patient-accessibility-mode h1 {
+    font-size: 2.2em !important;
+    font-weight: 700 !important;
+    margin-bottom: 1em !important;
+}
+
+.patient-accessibility-mode h2 {
+    font-size: 1.8em !important;
+    font-weight: 700 !important;
+    margin-bottom: 0.8em !important;
+}
+
+.patient-accessibility-mode h3 {
+    font-size: 1.6em !important;
+    font-weight: 700 !important;
+    margin-bottom: 0.6em !important;
+}
+
+.patient-accessibility-mode p {
+    font-size: 1.4em !important;
+    font-weight: 500 !important;
+    margin-bottom: 1em !important;
+}
+
+/* ルビ（ふりがな）スタイル */
+.furigana-ruby {
+    ruby-align: center;
+    ruby-position: over;
+}
+
+.furigana-ruby rt {
+    font-size: 0.6em;
+    color: #666;
+    font-weight: 400;
+}
+
+/* 高コントラスト表示 */
+.high-contrast {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+
+.high-contrast .menu-item {
+    background-color: #f0f0f0 !important;
+    border: 2px solid #333333 !important;
+    color: #000000 !important;
+}
+
+.high-contrast h1,
+.high-contrast h2,
+.high-contrast h3,
+.high-contrast p {
+    color: #000000 !important;
+}
+
+.high-contrast .patient-header {
+    background-color: #f8f8f8 !important;
+    border: 2px solid #000000 !important;
+}
+
+.high-contrast .security-footer {
+    background-color: #e0e0e0 !important;
+    color: #000000 !important;
+}
+
+/* 言語切り替えボタン */
+.language-selector {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.language-selector:hover {
+    background: #0056b3;
+}
+
+/* アクセシビリティ設定パネル */
+.accessibility-panel {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    z-index: 999;
+    display: none;
+    min-width: 250px;
+}
+
+.accessibility-panel.show {
+    display: block;
+}
+
+.accessibility-option {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.accessibility-option label {
+    font-weight: 500;
+    margin-right: 10px;
+}
+
+/* 切り替えスイッチ */
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 25px;
+    background-color: #ccc;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.toggle-switch.active {
+    background-color: #4CAF50;
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: white;
+    top: 2.5px;
+    left: 2.5px;
+    transition: transform 0.3s;
+}
+
+.toggle-switch.active::after {
+    transform: translateX(25px);
+}
+
+/* 読み上げハイライト */
+.reading-highlight {
+    background-color: #ffeb3b !important;
+    padding: 2px 4px;
+    border-radius: 3px;
+    animation: pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+    from { background-color: #ffeb3b; }
+    to { background-color: #ffc107; }
+}
+
+/* 多言語対応のフォント調整 */
+.lang-en {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+}
+
+.lang-zh {
+    font-family: 'Microsoft YaHei', '微软雅黑', 'SimSun', '宋体', sans-serif;
+}
+
+.lang-ko {
+    font-family: 'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif;
+}
+
+/* わかりやすい表示スタイル（絵文字なし、言葉の置き換えのみ） */

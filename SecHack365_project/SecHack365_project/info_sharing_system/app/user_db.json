@@ -1,0 +1,26 @@
+{
+    "testuser": {
+        "password": "$pbkdf2-sha256$29000$iREixLg3JuT83zsHIMS4lw$rUA7k8s5ZgsUyciJS5YjnE8qf../5Yx0JqcOUzSp4w0",
+        "salt": "iREixLg3JuT83zsHIMS4lw",
+        "role": "doctor",
+        "mfa_enabled": false,
+        "mfa_secret": null,
+        "created_at": "{\"timestamp\": \"auto-generated\"}",
+        "last_login": null,
+        "mfa_backup_codes": null,
+        "webauthn_credentials": [],
+        "webauthn_challenges": {}
+    },
+    "doctor1": {
+        "password": "$pbkdf2-sha256$29000$mZOy9l5rjbGWkpIyJkToPQ$X/IAN4dQ9RebZXUdOB6yEVvtio3EB7t0nos.K31Vmrw",
+        "salt": "mZOy9l5rjbGWkpIyJkToPQ",
+        "role": "doctor",
+        "mfa_enabled": false,
+        "mfa_secret": null,
+        "created_at": "{\"timestamp\": \"auto-generated\"}",
+        "last_login": null,
+        "mfa_backup_codes": null,
+        "webauthn_credentials": [],
+        "webauthn_challenges": {}
+    }
+}
