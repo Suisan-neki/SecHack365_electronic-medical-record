@@ -39,7 +39,7 @@ cd info_sharing_system
 python run_app.py
 ```
 
-アプリケーションは https://localhost:5000 でアクセスできます。
+アプリケーションは https://localhost:5001 でアクセスできます。
 
 ## 技術スタック
 
