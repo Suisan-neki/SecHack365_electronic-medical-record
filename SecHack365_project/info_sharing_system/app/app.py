@@ -969,6 +969,126 @@ def webauthn_login_complete():
     except Exception as e:
         return jsonify({'error': f'認証完了エラー: {str(e)}'}), 500
 
+# グローバル変数でラズパイ表示用患者IDを管理
+current_display_patient_id = None
+
+# ラズパイ患者ビュー専用API
+@app.route('/api/patient-display')
+def get_patient_display():
+    """ラズパイ用患者ビュー専用API（認証不要）"""
+    try:
+        # グローバル変数から患者IDを取得（PCから設定される）
+        global current_display_patient_id
+        patient_id = current_display_patient_id
+        if not patient_id:
+            return jsonify({"error": "No patient selected for display"}), 400
+        
+        # 患者データの取得（デモデータを直接返す）
+        try:
+            # デモ患者データを直接返す
+            if patient_id == "P001":
+                response_data = {
+                    "patient_info": {
+                        "name": "山下真凜",
+                        "birth_date": "1990-05-15",
+                        "age": 33,
+                        "gender": "女性"
+                    },
+                    "current_conditions": "高血圧、軽度の糖尿病",
+                    "medications": "アムロジピン 5mg、メトホルミン 500mg",
+                    "test_results": "血圧: 140/90 mmHg、血糖値: 120 mg/dL"
+                }
+            else:
+                return jsonify({"error": "Patient data not found"}), 404
+            
+        except Exception as e:
+            print(f"[ERROR] ラズパイ用患者データ取得エラー: {e}")
+            return jsonify({"error": f"Failed to load patient data: {str(e)}"}), 500
+        
+        # 監査ログ記録
+        audit_logger.log_event(
+            event_id="PATIENT_DISPLAY_ACCESS",
+            user_id="raspberry_pi",
+            user_role="display_device",
+            ip_address=request.remote_addr,
+            action="read",
+            resource="patient_display",
+            status="success",
+            message=f"ラズパイから患者ID {patient_id} の表示データにアクセス",
+            details={"patient_id": patient_id}
+        )
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        audit_logger.log_event(
+            event_id="PATIENT_DISPLAY_ERROR",
+            user_id="raspberry_pi",
+            user_role="display_device",
+            ip_address=request.remote_addr,
+            action="read",
+            resource="patient_display",
+            status="error",
+            message=f"ラズパイ表示データアクセス中にエラーが発生: {str(e)}",
+            details={"error": str(e)}
+        )
+        return jsonify({"error": "Internal server error"}), 500
+
+# PC側から患者表示を制御するAPI
+@app.route('/api/set-patient-display', methods=['POST'])
+def set_patient_display():
+    """PC側から患者表示を設定するAPI（認証を一時的に無効化）"""
+    try:
+        data = request.get_json()
+        patient_id = data.get('patient_id')
+        
+        if not patient_id:
+            return jsonify({"error": "patient_id is required"}), 400
+        
+        # グローバル変数に患者IDを設定（セッション共有の問題を回避）
+        global current_display_patient_id
+        current_display_patient_id = patient_id
+        
+        # 監査ログ記録（認証なしでも記録）
+        audit_logger.log_event(
+            event_id="PATIENT_DISPLAY_SET",
+            user_id="system_user",
+            user_role="system",
+            ip_address=request.remote_addr,
+            action="set_display",
+            resource="patient_display",
+            status="success",
+            message=f"患者ID {patient_id} をラズパイ表示に設定",
+            details={"patient_id": patient_id}
+        )
+        
+        return jsonify({"success": True, "patient_id": patient_id})
+        
+    except Exception as e:
+        print(f"[ERROR] set_patient_display: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+# ラズパイ用患者ビューページ
+@app.route('/patient-display')
+def patient_display():
+    """ラズパイ用患者ビュー表示ページ"""
+    return render_template('patient_display.html')
+
+# テスト用ページ
+@app.route('/raspi_test.html')
+def raspi_test():
+    """ラズパイ表示テスト用ページ"""
+    return render_template('raspi_test.html')
+
+# 修正用JavaScriptファイル
+@app.route('/pc_fix.js')
+def pc_fix_js():
+    """修正用JavaScriptファイル"""
+    from flask import send_from_directory
+    return send_from_directory('static', 'pc_fix.js', mimetype='application/javascript')
+
 # 登録されているルートを表示（デバッグ用）
 print("[STARTUP] 登録されているAPIルート:")
 for rule in app.url_map.iter_rules():
