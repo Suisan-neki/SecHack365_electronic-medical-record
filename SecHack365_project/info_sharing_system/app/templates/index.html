@@ -112,12 +112,12 @@
                             <small>元システムの生データを確認</small>
                         </span>
                     </button>
-                    <button onclick="switchView('patient')" class="primary-action-button disabled" id="patient-view-btn" disabled
-                            style="display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; text-align: center !important;">
-                        <span class="button-icon" style="text-align: center !important;">👤</span>
+                    <button onclick="sendToRaspberryPi()" class="primary-action-button disabled" id="raspi-display-btn" disabled
+                            style="display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; text-align: center !important; background: #e67e22;">
+                        <span class="button-icon" style="text-align: center !important;">🍓</span>
                         <span class="button-text" style="text-align: center !important; width: 100% !important;">
-                            <strong>患者向けディスプレイに表示</strong>
-                            <small>患者が理解しやすい形式で情報を表示</small>
+                            <strong>患者用ディスプレイに表示</strong>
+                            <small>ラズパイのモニターに患者情報を表示</small>
                         </span>
                     </button>
                 </div>
@@ -213,7 +213,7 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='script_new.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script src="{{ url_for('static', filename='accessibility.js') }}"></script>
     <script src="{{ url_for('static', filename='google_translate.js') }}"></script>
 </body>

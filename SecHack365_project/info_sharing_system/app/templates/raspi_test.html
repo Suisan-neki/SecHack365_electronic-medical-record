@@ -1,0 +1,137 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ラズパイ表示テスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-button { 
+            background: #e67e22; 
+            color: white; 
+            padding: 15px 30px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            margin: 10px;
+        }
+        .test-button:hover { background: #d35400; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🍓 ラズパイ表示テスト</h1>
+    
+    <div id="status" class="status info">
+        テスト準備完了
+    </div>
+    
+    <button class="test-button" onclick="testRaspiDisplay()">
+        🍓 ラズパイに表示（テスト）
+    </button>
+    
+    <button class="test-button" onclick="checkConnection()">
+        🔍 接続確認
+    </button>
+    
+    <button class="test-button" onclick="checkRaspiStatus()">
+        📊 ラズパイ状態確認
+    </button>
+    
+    <div id="log" style="background: #f8f9fa; padding: 15px; margin-top: 20px; border-radius: 5px; font-family: monospace; white-space: pre-wrap;"></div>
+    
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+        
+        function setStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        async function testRaspiDisplay() {
+            log('🍓 ラズパイ表示テストを開始します...');
+            setStatus('送信中...', 'info');
+            
+            try {
+                const response = await fetch('/api/set-patient-display', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        patient_id: 'patient_001'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                log(`✅ 送信成功: ${JSON.stringify(result)}`);
+                setStatus('✅ ラズパイへの送信が完了しました！', 'success');
+                
+            } catch (error) {
+                log(`❌ 送信エラー: ${error.message}`);
+                setStatus(`❌ 送信失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkConnection() {
+            log('🔍 接続確認を開始します...');
+            setStatus('接続確認中...', 'info');
+            
+            try {
+                const response = await fetch('/api/patient-display');
+                log(`患者表示API: HTTP ${response.status}`);
+                
+                if (response.ok) {
+                    setStatus('✅ 接続正常', 'success');
+                } else {
+                    setStatus(`⚠️ 接続問題: HTTP ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ 接続エラー: ${error.message}`);
+                setStatus(`❌ 接続失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkRaspiStatus() {
+            log('📊 ラズパイ状態確認を開始します...');
+            setStatus('状態確認中...', 'info');
+            
+            try {
+                // ラズパイのIPアドレスに直接アクセス
+                const raspiResponse = await fetch('http://192.168.3.7:5001/patient-display', {
+                    mode: 'no-cors'
+                });
+                log('✅ ラズパイへの直接アクセス試行完了');
+                setStatus('✅ ラズパイ状態確認完了', 'success');
+                
+            } catch (error) {
+                log(`⚠️ ラズパイ直接アクセスエラー: ${error.message}`);
+                setStatus('⚠️ ラズパイ直接アクセス不可（CORS制限の可能性）', 'info');
+            }
+        }
+        
+        // ページ読み込み時の初期化
+        window.onload = function() {
+            log('🔧 テストページが読み込まれました');
+            log('医療システムサーバー: http://localhost:5001');
+            log('ラズパイアドレス: http://192.168.3.7:5001');
+        };
+    </script>
+</body>
+</html>

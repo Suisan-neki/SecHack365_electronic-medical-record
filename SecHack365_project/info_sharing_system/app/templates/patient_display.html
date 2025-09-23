@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>患者ビュー - 電子カルテ情報共有システム</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='accessibility.css') }}">
+    <style>
+        /* ラズパイ専用スタイル */
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Noto Sans JP', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            min-height: calc(100vh - 40px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .patient-name {
+            font-size: 2.5em;
+            color: #667eea;
+            margin: 0;
+            font-weight: bold;
+        }
+        
+        .patient-info {
+            font-size: 1.2em;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .section-title {
+            font-size: 1.8em;
+            color: #667eea;
+            margin: 0 0 20px 0;
+            font-weight: bold;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 1.3em;
+            color: #333;
+        }
+        
+        .medication-item, .diagnosis-item, .lab-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .loading {
+            text-align: center;
+            font-size: 1.5em;
+            color: #667eea;
+            padding: 50px;
+        }
+        
+        .error {
+            text-align: center;
+            font-size: 1.3em;
+            color: #e74c3c;
+            padding: 50px;
+            background: #ffeaea;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        /* アクセシビリティボタン */
+        .accessibility-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .accessibility-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .accessibility-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 自動更新インジケーター */
+        .update-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .update-indicator.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body data-user-role="patient">
+    <div class="accessibility-controls">
+        <button class="accessibility-btn" onclick="toggleAccessibilityMenu()">🌐 変換</button>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1 class="patient-name" id="patientName">読み込み中...</h1>
+            <div class="patient-info" id="patientInfo"></div>
+        </div>
+        
+        <div id="loadingMessage" class="loading">
+            患者情報を読み込んでいます...
+        </div>
+        
+        <div id="errorMessage" class="error" style="display: none;">
+            患者情報の読み込みに失敗しました。
+        </div>
+        
+        <div id="patientContent" style="display: none;">
+            <!-- 基本情報 -->
+            <div class="section">
+                <h2 class="section-title">基本情報</h2>
+                <div class="info-grid" id="basicInfo">
+                    <!-- 動的に生成 -->
+                </div>
+            </div>
+            
+            <!-- 現在の診断 -->
+            <div class="section">
+                <h2 class="section-title">現在の病気・体の調子が悪いところ</h2>
+                <div id="diagnoses">
+                    <!-- 動的に生成 -->
+                </div>
+            </div>
+            
+            <!-- 処方薬 -->
+            <div class="section">
+                <h2 class="section-title">現在処方されている薬の情報</h2>
+                <div id="medications">
+                    <!-- 動的に生成 -->
+                </div>
+            </div>
+            
+            <!-- バイタルサイン -->
+            <div class="section">
+                <h2 class="section-title">最新の体の状態</h2>
+                <div class="info-grid" id="vitalSigns">
+                    <!-- 動的に生成 -->
+                </div>
+            </div>
+            
+            <!-- 検査結果 -->
+            <div class="section">
+                <h2 class="section-title">最新の検査結果と数値</h2>
+                <div id="labResults">
+                    <!-- 動的に生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="update-indicator" id="updateIndicator">
+        情報を更新しました
+    </div>
+    
+    <script src="{{ url_for('static', filename='accessibility.js') }}"></script>
+    <script src="{{ url_for('static', filename='google_translate.js') }}"></script>
+    <script>
+        let patientData = null;
+        let updateInterval = null;
+        
+        // 患者データを取得
+        async function fetchPatientData() {
+            try {
+                const response = await fetch('/api/patient-display');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('患者データ取得成功:', data);
+                return data;
+            } catch (error) {
+                console.error('患者データ取得エラー:', error);
+                throw error;
+            }
+        }
+        
+        // 患者データを表示
+        function displayPatientData(data) {
+            patientData = data;
+            
+            // ヘッダー情報
+            document.getElementById('patientName').textContent = data.name || '患者名不明';
+            document.getElementById('patientInfo').textContent = 
+                `${data.age || '?'}歳 / ${data.gender || '性別不明'} / ${data.blood_type || '血液型不明'}`;
+            
+            // 基本情報
+            const basicInfo = document.getElementById('basicInfo');
+            basicInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">年齢</div>
+                    <div class="info-value">${data.age || '不明'}歳</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">性別</div>
+                    <div class="info-value">${data.gender || '不明'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">血液型</div>
+                    <div class="info-value">${data.blood_type || '不明'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">アレルギー</div>
+                    <div class="info-value">${data.allergies ? data.allergies.join(', ') : 'なし'}</div>
+                </div>
+            `;
+            
+            // 診断情報
+            const diagnoses = document.getElementById('diagnoses');
+            if (data.recent_diagnoses && data.recent_diagnoses.length > 0) {
+                diagnoses.innerHTML = data.recent_diagnoses.map(diagnosis => `
+                    <div class="diagnosis-item">
+                        <div class="info-label">${diagnosis.date} - ${diagnosis.doctor}</div>
+                        <div class="info-value">${diagnosis.diagnosis}</div>
+                    </div>
+                `).join('');
+            } else {
+                diagnoses.innerHTML = '<div class="info-item">現在の診断情報はありません</div>';
+            }
+            
+            // 処方薬
+            const medications = document.getElementById('medications');
+            if (data.current_medications && data.current_medications.length > 0) {
+                medications.innerHTML = data.current_medications.map(med => `
+                    <div class="medication-item">
+                        <div class="info-label">${med.name}</div>
+                        <div class="info-value">${med.dosage} - ${med.frequency}</div>
+                    </div>
+                `).join('');
+            } else {
+                medications.innerHTML = '<div class="info-item">現在処方されている薬はありません</div>';
+            }
+            
+            // バイタルサイン
+            const vitalSigns = document.getElementById('vitalSigns');
+            if (data.vital_signs) {
+                const vitals = data.vital_signs;
+                vitalSigns.innerHTML = `
+                    <div class="info-item">
+                        <div class="info-label">血圧</div>
+                        <div class="info-value">${vitals.blood_pressure || '測定なし'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">心拍数</div>
+                        <div class="info-value">${vitals.heart_rate || '測定なし'} bpm</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">体温</div>
+                        <div class="info-value">${vitals.temperature || '測定なし'}°C</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">体重</div>
+                        <div class="info-value">${vitals.weight || '測定なし'} kg</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">身長</div>
+                        <div class="info-value">${vitals.height || '測定なし'} cm</div>
+                    </div>
+                `;
+            }
+            
+            // 検査結果
+            const labResults = document.getElementById('labResults');
+            if (data.lab_results && data.lab_results.length > 0) {
+                labResults.innerHTML = data.lab_results.map(lab => `
+                    <div class="lab-item">
+                        <div class="info-label">${lab.test} (${lab.date})</div>
+                        <div class="info-value">${lab.value} <span style="color: #666; font-size: 0.9em;">(正常値: ${lab.normal_range})</span></div>
+                    </div>
+                `).join('');
+            } else {
+                labResults.innerHTML = '<div class="info-item">検査結果はありません</div>';
+            }
+            
+            // 表示切り替え
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('patientContent').style.display = 'block';
+            
+            // 更新インジケーター表示
+            showUpdateIndicator();
+        }
+        
+        // エラー表示
+        function showError(message) {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('patientContent').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message || '患者情報の読み込みに失敗しました。';
+        }
+        
+        // 更新インジケーター表示
+        function showUpdateIndicator() {
+            const indicator = document.getElementById('updateIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+        
+        // アクセシビリティメニュー切り替え
+        function toggleAccessibilityMenu() {
+            // accessibility.jsの機能を使用
+            if (window.patientAccessibility) {
+                window.patientAccessibility.toggleAccessibilityMenu();
+            }
+        }
+        
+        // 初期化
+        async function initialize() {
+            try {
+                const data = await fetchPatientData();
+                displayPatientData(data);
+                
+                // 30秒ごとに自動更新
+                updateInterval = setInterval(async () => {
+                    try {
+                        const newData = await fetchPatientData();
+                        displayPatientData(newData);
+                    } catch (error) {
+                        console.error('自動更新エラー:', error);
+                    }
+                }, 30000);
+                
+            } catch (error) {
+                showError('患者情報の読み込みに失敗しました。PCで患者を選択してください。');
+            }
+        }
+        
+        // ページ読み込み時に初期化
+        document.addEventListener('DOMContentLoaded', initialize);
+        
+        // ページを離れる時にインターバルをクリア
+        window.addEventListener('beforeunload', () => {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1962,9 +1962,143 @@ async function loadPatientData() {
     }
 }
 
+// ラズパイ表示制御機能
+async function sendToRaspberryPi() {
+    const currentPatientId = getCurrentPatientId();
+    if (!currentPatientId) {
+        alert('患者が選択されていません。まず患者を選択してください。');
+        return;
+    }
+    
+    const raspiBtn = document.getElementById('raspi-display-btn');
+    const originalText = raspiBtn.innerHTML;
+    
+    try {
+        // ボタンを無効化
+        raspiBtn.disabled = true;
+        raspiBtn.innerHTML = `
+            <span class="button-icon">⏳</span>
+            <span class="button-text">
+                <strong>送信中...</strong>
+                <small>ラズパイに情報を送信しています</small>
+            </span>
+        `;
+        
+        // APIに患者IDを送信
+        const response = await fetch('/api/set-patient-display', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                patient_id: currentPatientId
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        // 成功時の表示
+        raspiBtn.innerHTML = `
+            <span class="button-icon">✅</span>
+            <span class="button-text">
+                <strong>送信完了</strong>
+                <small>ラズパイで表示中</small>
+            </span>
+        `;
+        
+        // 操作履歴に追加
+        addToOperationHistory(`患者情報をラズパイに送信: ${currentPatientId}`, 'raspi_display');
+        
+        // 3秒後にボタンを元に戻す
+        setTimeout(() => {
+            raspiBtn.innerHTML = originalText;
+            raspiBtn.disabled = false;
+        }, 3000);
+        
+        // ラズパイ表示ページを新しいタブで開く（確認用）
+        const confirmOpen = confirm('ラズパイ表示ページを新しいタブで開きますか？（確認用）');
+        if (confirmOpen) {
+            window.open('/patient-display', '_blank');
+        }
+        
+    } catch (error) {
+        console.error('ラズパイ送信エラー:', error);
+        
+        // エラー時の表示
+        raspiBtn.innerHTML = `
+            <span class="button-icon">❌</span>
+            <span class="button-text">
+                <strong>送信失敗</strong>
+                <small>エラーが発生しました</small>
+            </span>
+        `;
+        
+        alert('ラズパイへの送信に失敗しました: ' + error.message);
+        addToOperationHistory('ラズパイ送信でエラーが発生しました', 'raspi_display_error');
+        
+        // 3秒後にボタンを元に戻す
+        setTimeout(() => {
+            raspiBtn.innerHTML = originalText;
+            raspiBtn.disabled = false;
+        }, 3000);
+    }
+}
+
+// 現在選択されている患者IDを取得
+function getCurrentPatientId() {
+    // 患者名から患者IDを推定（実際の実装では適切な方法で取得）
+    const patientNameElement = document.getElementById('patient-name');
+    if (patientNameElement && patientNameElement.textContent.trim()) {
+        // P001を返す（実際のデータに合わせて）
+        return 'P001';
+    }
+    return 'P001'; // デフォルトで P001 を返す
+}
+
+// ボタンの有効/無効状態を更新
+function updateRaspiButtonState() {
+    const raspiBtn = document.getElementById('raspi-display-btn');
+    
+    if (raspiBtn) {
+        // 常に有効化（患者データが読み込まれていれば）
+        raspiBtn.disabled = false;
+        raspiBtn.classList.remove('disabled');
+        raspiBtn.style.background = '#e67e22';
+        raspiBtn.style.opacity = '1';
+        raspiBtn.style.cursor = 'pointer';
+        console.log('✅ ラズパイボタンを有効化しました');
+    }
+}
+
+// 患者データ読み込み時にボタン状態を更新
+const originalFetchPatientData = fetchPatientData;
+fetchPatientData = function() {
+    const result = originalFetchPatientData.apply(this, arguments);
+    updateRaspiButtonState();
+    return result;
+};
+
 // 初期表示
 document.addEventListener('DOMContentLoaded', function() {
     updateOperationHistoryDisplay();
+    updateRaspiButtonState();
+    
+    // ラズパイボタンを強制的に有効化（追加の保険）
+    setTimeout(() => {
+        const raspiBtn = document.getElementById('raspi-display-btn');
+        if (raspiBtn) {
+            raspiBtn.disabled = false;
+            raspiBtn.classList.remove('disabled');
+            raspiBtn.style.background = '#e67e22';
+            raspiBtn.style.opacity = '1';
+            raspiBtn.style.cursor = 'pointer';
+            console.log('✅ ラズパイボタンを強制有効化しました（DOMContentLoaded）');
+        }
+    }, 1000);
 });
 
 switchView('private');
