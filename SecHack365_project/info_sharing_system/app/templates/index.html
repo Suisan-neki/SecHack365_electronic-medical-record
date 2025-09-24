@@ -1,48 +1,68 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <!-- 基本メタデータ -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>診療ディスプレイ</title>
+    
+    <!-- スタイルシートの読み込み -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='accessibility.css') }}">
 </head>
 <body {% if current_user.is_authenticated %}data-user-role="{{ current_user.role }}"{% endif %}>
+    <!-- ======================================== -->
+    <!-- 医師向けプライベートビュー（メイン画面） -->
+    <!-- ======================================== -->
     <div id="private-view">
-        <div class="user-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+        <!-- ヘッダーセクション: ユーザー情報とナビゲーションボタン -->
+        <div class="user-header">
+            <!-- 左側: システム名とユーザー情報 -->
             <div class="user-info">
-                <h2 style="margin: 0; color: #2d3748;">患者情報共有システム</h2>
+                <h2>患者情報共有システム</h2>
                 {% if current_user.is_authenticated %}
-                <p style="margin: 5px 0 0 0; color: #718096;">
+                <p class="user-status">
                     ログイン中: <strong>{{ current_user.id }}</strong> 
                     ({{ current_user.role }})
                     {% if current_user.mfa_enabled %}
-                    <span style="background: #c6f6d5; color: #2f855a; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 8px;">MFA有効</span>
+                    <span class="mfa-badge">MFA有効</span>
                     {% endif %}
                 </p>
                 {% else %}
-                <p style="margin: 5px 0 0 0; color: #718096;">
-                    ログインが必要です
-                </p>
+                <p class="user-status">ログインが必要です</p>
                 {% endif %}
             </div>
+            <!-- 右側: アクションボタンとユーティリティ -->
             <div class="user-actions">
+                <!-- 現在時刻表示 -->
+                <div class="header-info">
+                    <div id="current-time">現在時刻: 読み込み中...</div>
+                </div>
+                <!-- ページ更新ボタン -->
+                <button onclick="location.reload()" class="refresh-btn">🔄 更新</button>
+                <!-- 認証状態に応じたナビゲーションボタン -->
                 {% if current_user.is_authenticated %}
-            {% if current_user.role == 'admin' or current_user.role == 'doctor' %}
-            <a href="{{ url_for('audit_dashboard') }}" style="background: #667eea; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔍 監査ログ</a>
-            {% endif %}
-                <a href="{{ url_for('webauthn_management') }}" style="background: #e67e22; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔧 WebAuthn管理</a>
-                <a href="{{ url_for('logout') }}" style="background: #e53e3e; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em;">ログアウト</a>
+                    <!-- 管理者・医師向け機能 -->
+                    {% if current_user.role == 'admin' or current_user.role == 'doctor' %}
+                    <a href="{{ url_for('audit_dashboard') }}" class="nav-btn audit-btn">🔍 監査ログ</a>
+                    {% endif %}
+                    <!-- 認証済みユーザー向け機能 -->
+                    <a href="{{ url_for('webauthn_management') }}" class="nav-btn webauthn-btn">🔧 WebAuthn管理</a>
+                    <a href="{{ url_for('logout') }}" class="nav-btn logout-btn">ログアウト</a>
                 {% else %}
-                <a href="{{ url_for('webauthn_login') }}" style="background: #28a745; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔐 WebAuthn</a>
-                <a href="{{ url_for('login') }}" style="background: #007bff; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em;">ログイン</a>
+                    <!-- 未認証ユーザー向け機能 -->
+                    <a href="{{ url_for('webauthn_login') }}" class="nav-btn webauthn-login-btn">🔐 WebAuthn</a>
+                    <a href="{{ url_for('login') }}" class="nav-btn login-btn">ログイン</a>
                 {% endif %}
             </div>
         </div>
         
+        <!-- メインタイトル -->
         <h1>🩺 医師向けプライベートビュー</h1>
         
-        <!-- デバッグ情報 -->
+        <!-- ======================================== -->
+        <!-- デバッグ情報セクション -->
+        <!-- ======================================== -->
         <div style="background: #f0f8ff; border: 1px solid #bee3f8; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
             <h3 style="margin: 0 0 10px 0; color: #2b6cb0;">認証状態（デバッグ情報）</h3>
             <p style="margin: 5px 0; color: #2c5282;">
@@ -93,33 +113,35 @@
                 </div>
             </div>
             
-            <!-- 【重要】主要操作ボタン - 横並び3つ -->
+            <!-- ======================================== -->
+            <!-- 主要操作ボタンセクション - 横並び3つ -->
+            <!-- ======================================== -->
             <div class="action-buttons priority-high">
                 <div class="button-row">
-                    <button onclick="loadPatientData()" class="primary-action-button" id="load-data-btn" 
-                            style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
-                        <span class="button-icon" style="text-align: center;">📤</span>
-                        <span class="button-text" style="text-align: center; width: 100%;">
+                    <!-- 患者情報抽出ボタン: 電子カルテシステムから患者データを取得 -->
+                    <button onclick="loadPatientData()" class="primary-action-button" id="load-data-btn">
+                        <span class="button-icon">📤</span>
+                        <span class="button-text">
                             <strong>患者情報を抽出</strong>
                             <small>電子カルテシステムから現在の患者データを取得</small>
                         </span>
                     </button>
-                    <button onclick="showRawEHRData()" class="primary-action-button disabled" id="raw-data-btn" disabled
-                            style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
-                        <span class="button-icon" style="text-align: center;">🗃️</span>
-                        <span class="button-text" style="text-align: center; width: 100%;">
+                    <!-- 生データ確認ボタン: 元システムの生データを表示（現在無効化） -->
+                    <button onclick="showRawEHRData()" class="primary-action-button disabled" id="raw-data-btn" disabled>
+                        <span class="button-icon">🗃️</span>
+                        <span class="button-text">
                             <strong>生データ確認</strong>
                             <small>元システムの生データを確認</small>
                         </span>
                     </button>
-                <button onclick="showPatientView()" class="primary-action-button disabled" id="patient-view-btn" disabled
-                        style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: #28a745;">
-                    <span class="button-icon" style="text-align: center;">👁️</span>
-                    <span class="button-text" style="text-align: center; width: 100%;">
-                        <strong>患者用ビューを表示</strong>
-                        <small>PCで患者向け画面を確認</small>
-                    </span>
-                </button>
+                    <!-- 患者用ビュー表示ボタン: PCで患者向け画面を確認 -->
+                    <button onclick="showPatientView()" class="primary-action-button disabled" id="patient-view-btn" disabled>
+                        <span class="button-icon">👁️</span>
+                        <span class="button-text">
+                            <strong>患者用ビューを表示</strong>
+                            <small>PCで患者向け画面を確認</small>
+                        </span>
+                    </button>
                 </div>
             </div>
             
@@ -152,8 +174,11 @@
             </div>
         </div>
     </div>
-    <!-- 患者向けメニュー画面 -->
+    <!-- ======================================== -->
+    <!-- 患者向けメニュー画面（非表示状態） -->
+    <!-- ======================================== -->
     <div id="patient-view" style="display:none;" class="fade-in patient-display-7inch">
+        <!-- 患者情報ヘッダー -->
         <div class="patient-header">
             <h1>診療情報</h1>
             <h2 id="patient-name"></h2>
@@ -175,7 +200,7 @@
                 <p>最新の検査データと数値</p>
             </div>
             
-            <div class="menu-item" onclick="sendToRaspberryPi()" style="background: #e67e22; color: white;">
+            <div class="menu-item" id="raspi-display-btn" onclick="sendToRaspberryPi()" style="background: #e67e22; color: white;">
                 <h3>🍓 ラズパイに表示</h3>
                 <p>ラズパイのモニターに患者情報を表示</p>
             </div>
@@ -256,8 +281,47 @@
         </div>
     </div>
 
+    <!-- ======================================== -->
+    <!-- JavaScriptファイルの読み込み -->
+    <!-- ======================================== -->
     <script src="{{ url_for('static', filename='script_fixed.js') }}"></script>
     <script src="{{ url_for('static', filename='accessibility.js') }}"></script>
     <script src="{{ url_for('static', filename='google_translate.js') }}"></script>
+    
+    <!-- ======================================== -->
+    <!-- インラインJavaScript: ユーティリティ機能 -->
+    <!-- ======================================== -->
+    <script>
+        /**
+         * 現在時刻を更新する関数
+         * ヘッダーの現在時刻表示を1秒ごとに更新
+         */
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = `現在時刻: ${timeString}`;
+            }
+        }
+        
+        /**
+         * ページ読み込み時の初期化処理
+         * - 現在時刻の表示開始
+         * - 1秒ごとの自動更新設定
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCurrentTime();
+            // 1秒ごとに時刻を更新
+            setInterval(updateCurrentTime, 1000);
+        });
+    </script>
 </body>
 </html>

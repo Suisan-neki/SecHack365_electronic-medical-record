@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>患者情報表示 - ラズパイテスト</title>
+    <style>
+        body {
+            font-family: 'Hiragino Sans', 'ヒラギノ角ゴシック', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .patient-info {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .info-value {
+            color: #212529;
+        }
+        .status {
+            text-align: center;
+            padding: 20px;
+            background: #d4edda;
+            border-radius: 10px;
+            color: #155724;
+            font-weight: bold;
+        }
+        .refresh-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+        }
+        .refresh-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 患者情報表示システム</h1>
+            <p>ラズパイテスト版</p>
+        </div>
+        
+        <div class="patient-info">
+            <h2>👤 患者情報</h2>
+            <div class="info-row">
+                <span class="info-label">患者ID:</span>
+                <span class="info-value">P001</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">氏名:</span>
+                <span class="info-value">山下真凜</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">年齢:</span>
+                <span class="info-value">22歳</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">性別:</span>
+                <span class="info-value">女性</span>
+            </div>
+        </div>
+        
+        <div class="patient-info">
+            <h2>🏥 診療情報</h2>
+            <div class="info-row">
+                <span class="info-label">診断:</span>
+                <span class="info-value">インフルエンザ</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">処方薬:</span>
+                <span class="info-value">タミフル 75mg</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">体温:</span>
+                <span class="info-value">38.2°C</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">血圧:</span>
+                <span class="info-value">118/75 mmHg</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">医師の指示:</span>
+                <span class="info-value">安静を保ち、水分補給を心がける。解熱後も2日間は外出を控える。</span>
+            </div>
+        </div>
+        
+        <div class="status">
+            ✅ 患者情報の表示が正常に動作しています
+        </div>
+        
+        <button class="refresh-btn" onclick="location.reload()">
+            🔄 画面を更新
+        </button>
+    </div>
+</body>
+</html>
