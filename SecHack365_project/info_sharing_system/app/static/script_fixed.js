@@ -112,6 +112,16 @@ window.showPatientView = function() {
     // 患者ビューに切り替え
     switchView('patient');
     
+    // アクセシビリティ設定をリセット
+    if (typeof accessibility !== 'undefined' && accessibility.resetAccessibility) {
+        accessibility.resetAccessibility();
+    }
+    
+    // 変換アイコンを作成（存在しない場合のみ）
+    if (typeof accessibility !== 'undefined' && accessibility.createAccessibilityButton) {
+        accessibility.createAccessibilityButton();
+    }
+    
     // 操作履歴に記録
     addToOperationHistory('PC用患者ビューを表示', 'patient_view_display');
 };
@@ -128,6 +138,18 @@ function switchView(viewType) {
         document.getElementById('private-view').style.display = 'block';
         document.getElementById('patient-view').style.display = 'none';
         document.getElementById('medical-detail-view').style.display = 'none';
+        
+        // 医師の画面に戻る際にアクセシビリティ設定をリセット
+        if (typeof accessibility !== 'undefined' && accessibility.resetAccessibility) {
+            accessibility.resetAccessibility();
+        }
+        
+        // 変換アイコンを削除
+        const convertBtn = document.querySelector('.language-selector');
+        if (convertBtn) {
+            convertBtn.remove();
+        }
+        
         addToOperationHistory('医師向けビューに切り替え', 'view_switch');
     }
 }
@@ -429,7 +451,7 @@ function showMedicalDetail(detailType) {
             loadMedicationsDetail();
             break;
         case 'tests':
-            document.getElementById('detail-title').textContent = '検査結果';
+            document.getElementById('detail-title').textContent = '';
             document.getElementById('tests-detail').style.display = 'block';
             loadTestsDetail();
             break;
@@ -440,6 +462,11 @@ function showMedicalDetail(detailType) {
 function backToMenu() {
     document.getElementById('medical-detail-view').style.display = 'none';
     document.getElementById('patient-view').style.display = 'block';
+    
+    // アクセシビリティ設定をリセット
+    if (typeof accessibility !== 'undefined' && accessibility.resetAccessibility) {
+        accessibility.resetAccessibility();
+    }
 }
 
 // 病気・症状の詳細を読み込む
@@ -575,6 +602,9 @@ async function loadTestsDetail() {
     } else {
         testResults.innerHTML = '<p>検査結果がありません</p>';
     }
+    
+    // 振り仮名の重複を防ぐために、detail-patient-nameをクリア
+    document.getElementById('detail-patient-name').textContent = '';
 }
 
 

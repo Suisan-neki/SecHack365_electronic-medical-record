@@ -489,7 +489,7 @@ def ensure_patient_data():
                         'patient_info': {
                             'id': 'P001',
                             'name': '山下真凜',
-                            'age': 28,
+                            'age': 22,
                             'gender': '女性',
                             'contact': '03-1234-5678',
                             'address': '東京都渋谷区'
@@ -498,12 +498,12 @@ def ensure_patient_data():
                             {
                                 'timestamp': '2024-01-15T10:30:00Z',
                                 'data': {
-                                    'diagnosis': '軽度の貧血',
-                                    'medication': '鉄剤 100mg',
-                                    'notes': '食事指導を実施。1ヶ月後に再検査予定。',
+                                    'diagnosis': 'インフルエンザ',
+                                    'medication': 'タミフル 75mg',
+                                    'notes': '安静を保ち、水分補給を心がける。解熱後も2日間は外出を控える。',
                                     'doctor': 'Dr. 田中',
-                                    'blood_pressure': '120/80',
-                                    'temperature': '36.5°C'
+                                    'blood_pressure': '118/75',
+                                    'temperature': '38.2°C'
                                 },
                                 'signature': 'yamashita_signature_1'
                             }
@@ -1262,13 +1262,13 @@ def get_patient_display():
                 response_data = {
                     "patient_info": {
                         "name": "山下真凜",
-                        "birth_date": "1990-05-15",
-                        "age": 33,
+                        "birth_date": "2002-05-15",
+                        "age": 22,
                         "gender": "女性"
                     },
-                    "current_conditions": "高血圧、軽度の糖尿病",
-                    "medications": "アムロジピン 5mg、メトホルミン 500mg",
-                    "test_results": "血圧: 140/90 mmHg、血糖値: 120 mg/dL"
+                    "current_conditions": "インフルエンザ",
+                    "medications": "タミフル 75mg",
+                    "test_results": "体温: 38.2°C、血圧: 118/75 mmHg"
                 }
             else:
                 return jsonify({"error": "Patient data not found"}), 404
