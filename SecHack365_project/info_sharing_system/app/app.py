@@ -803,8 +803,33 @@ def get_patient_data(patient_id):
                 # 署名対象のデータを文字列として結合
                 signed_data_str = json.dumps(latest_record['data'], ensure_ascii=False, sort_keys=True)
                 print(f"[DEBUG] 署名対象データ: {signed_data_str[:100]}...")
-                signature_bytes = bytes.fromhex(latest_record['signature'])
-                is_valid_signature = verify_signature(demo_keys['public_key'], signed_data_str, signature_bytes)
+                
+                # 署名の形式をチェック（16進数文字列かどうか）
+                signature = latest_record['signature']
+                if signature.startswith('yamashita_signature_'):
+                    # 古い形式の署名の場合は、新しい署名を生成
+                    print(f"[DEBUG] 古い形式の署名を検出、新しい署名を生成中...")
+                    new_signature = sign_patient_data(latest_record['data'], demo_keys['private_key'])
+                    if new_signature:
+                        # データベースを更新
+                        latest_record['signature'] = new_signature
+                        # 暗号化データを保存
+                        try:
+                            save_encrypted_karte_data(decrypted_karte_data, current_user.get_encryption_key())
+                            print(f"[INFO] 署名を更新しました")
+                        except Exception as e:
+                            print(f"[WARNING] 署名更新の保存に失敗: {e}")
+                        signature = new_signature
+                    else:
+                        print(f"[ERROR] 新しい署名の生成に失敗")
+                        is_valid_signature = False
+                
+                try:
+                    signature_bytes = bytes.fromhex(signature)
+                    is_valid_signature = verify_signature(demo_keys['public_key'], signed_data_str, signature_bytes)
+                except ValueError as e:
+                    print(f"[ERROR] 署名の16進数変換エラー: {e}")
+                    is_valid_signature = False
                 print(f"[DEBUG] 署名検証結果: {'Valid' if is_valid_signature else 'Invalid'}")
             else:
                 print("[WARNING] デモ用鍵の取得に失敗")
@@ -1047,9 +1072,10 @@ def get_audit_logs():
                             
                             # 統計情報の更新
                             stats['total'] += 1
-                            if log_entry.get('status') == 'SUCCESS':
+                            status = log_entry.get('status', '').upper()
+                            if status == 'SUCCESS':
                                 stats['success'] += 1
-                            elif log_entry.get('status') == 'FAILURE':
+                            elif status == 'FAILURE':
                                 stats['failure'] += 1
                             
                             if log_entry.get('user_id') and log_entry.get('user_id') != 'anonymous':
