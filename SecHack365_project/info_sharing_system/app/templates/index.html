@@ -30,6 +30,7 @@
                 {% if current_user.is_authenticated %}
             {% if current_user.role == 'admin' or current_user.role == 'doctor' %}
             <a href="{{ url_for('audit_dashboard') }}" style="background: #667eea; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔍 監査ログ</a>
+            <button onclick="showKeySystemStatus()" style="background: #6f42c1; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px; cursor: pointer;">🔑 鍵システム確認</button>
             {% endif %}
                 <a href="{{ url_for('webauthn_register') }}" style="background: #28a745; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔐 WebAuthn登録</a>
                 <a href="{{ url_for('logout') }}" style="background: #e53e3e; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em;">ログアウト</a>
@@ -97,29 +98,29 @@
             <div class="action-buttons priority-high">
                 <div class="button-row">
                     <button onclick="loadPatientData()" class="primary-action-button" id="load-data-btn" 
-                            style="display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; text-align: center !important;">
-                        <span class="button-icon" style="text-align: center !important;">📤</span>
-                        <span class="button-text" style="text-align: center !important; width: 100% !important;">
+                            style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                        <span class="button-icon" style="text-align: center;">📤</span>
+                        <span class="button-text" style="text-align: center; width: 100%;">
                             <strong>患者情報を抽出</strong>
                             <small>電子カルテシステムから現在の患者データを取得</small>
                         </span>
                     </button>
                     <button onclick="showRawEHRData()" class="primary-action-button disabled" id="raw-data-btn" disabled
-                            style="display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; text-align: center !important;">
-                        <span class="button-icon" style="text-align: center !important;">🗃️</span>
-                        <span class="button-text" style="text-align: center !important; width: 100% !important;">
+                            style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                        <span class="button-icon" style="text-align: center;">🗃️</span>
+                        <span class="button-text" style="text-align: center; width: 100%;">
                             <strong>生データ確認</strong>
                             <small>元システムの生データを確認</small>
                         </span>
                     </button>
-                    <button onclick="sendToRaspberryPi()" class="primary-action-button disabled" id="raspi-display-btn" disabled
-                            style="display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; text-align: center !important; background: #e67e22;">
-                        <span class="button-icon" style="text-align: center !important;">🍓</span>
-                        <span class="button-text" style="text-align: center !important; width: 100% !important;">
-                            <strong>患者用ディスプレイに表示</strong>
-                            <small>ラズパイのモニターに患者情報を表示</small>
-                        </span>
-                    </button>
+                <button onclick="showPatientView()" class="primary-action-button disabled" id="patient-view-btn" disabled
+                        style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: #28a745;">
+                    <span class="button-icon" style="text-align: center;">👁️</span>
+                    <span class="button-text" style="text-align: center; width: 100%;">
+                        <strong>患者用ビューを表示</strong>
+                        <small>PCで患者向け画面を確認</small>
+                    </span>
+                </button>
                 </div>
             </div>
             
@@ -174,6 +175,11 @@
                 <h3>検査結果</h3>
                 <p>最新の検査結果と数値</p>
             </div>
+            
+            <div class="menu-item" onclick="sendToRaspberryPi()" style="background: #e67e22; color: white;">
+                <h3>🍓 ラズパイに表示</h3>
+                <p>ラズパイのモニターに患者情報を表示</p>
+            </div>
         </div>
         
         <div class="security-footer">
@@ -213,7 +219,7 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='script_fixed.js') }}"></script>
     <script src="{{ url_for('static', filename='accessibility.js') }}"></script>
     <script src="{{ url_for('static', filename='google_translate.js') }}"></script>
 </body>
