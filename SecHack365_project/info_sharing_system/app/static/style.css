@@ -539,21 +539,23 @@ ul {
 }
 
 .security-button {
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 15px 20px;
-    font-size: 1em;
+    background: #ffffff;
+    color: #dc3545;
+    border: 2px solid #dc3545;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 0.9em;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 10px rgba(220, 53, 69, 0.2);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .security-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    background: #f0f8f0 !important;
+    border-color: #4caf50 !important;
+    color: #000000 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
 
@@ -1804,20 +1806,7 @@ ul {
     margin-bottom: 12px;
 }
 
-.security-button {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.security-button:hover {
-    background: #0056b3;
-}
+/* セキュリティボタンのスタイルは上で統一済み */
 
 /* セキュリティ検証セクションのスタイル */
 .security-verification-container {
@@ -2096,4 +2085,193 @@ ul {
         font-size: 0.9em;
         padding: 10px 20px;
     }
+}
+
+/* ======================================== */
+/* ヘッダーセクション - 軽量化されたスタイル */
+/* ======================================== */
+.user-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.user-info h2 {
+    margin: 0;
+    color: #2d3748;
+}
+
+.user-status {
+    margin: 5px 0 0 0;
+    color: #718096;
+}
+
+.mfa-badge {
+    background: #c6f6d5;
+    color: #2f855a;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    margin-left: 8px;
+}
+
+.header-info {
+    margin-right: 15px;
+    text-align: right;
+}
+
+#current-time {
+    font-size: 0.8em;
+    color: #718096;
+}
+
+.refresh-btn {
+    background: #ffffff;
+    color: #38a169;
+    padding: 12px 20px;
+    border: 2px solid #38a169;
+    border-radius: 8px;
+    font-size: 0.9em;
+    margin-right: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.refresh-btn:hover {
+    background: #f0f8f0 !important;
+    border-color: #4caf50 !important;
+    color: #000000 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ナビゲーションボタン - 患者用ビューと同じ控えめなスタイル */
+.nav-btn {
+    color: #000000;
+    padding: 12px 20px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.9em;
+    margin-right: 8px;
+    display: inline-block;
+    background: #ffffff;
+    border: 2px solid #81c784;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.audit-btn { 
+    background: #ffffff;
+    border-color: #667eea;
+    color: #667eea;
+}
+.webauthn-btn { 
+    background: #ffffff;
+    border-color: #e67e22;
+    color: #e67e22;
+}
+.logout-btn { 
+    background: #ffffff;
+    border-color: #e53e3e;
+    color: #e53e3e;
+    margin-right: 0;
+}
+.webauthn-login-btn { 
+    background: #ffffff;
+    border-color: #28a745;
+    color: #28a745;
+}
+.login-btn { 
+    background: #ffffff;
+    border-color: #007bff;
+    color: #007bff;
+    margin-right: 0;
+}
+
+.nav-btn:hover {
+    background: #f0f8f0;
+    border-color: #4caf50;
+    color: #000000;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ======================================== */
+/* ボタン統一スタイル - 患者用ビューと同じ控えめなデザイン */
+/* ======================================== */
+.action-buttons .primary-action-button {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: #ffffff !important;
+    margin: 16px 0 !important;
+    padding: 20px !important;
+    border: 2px solid #81c784 !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.action-buttons .primary-action-button:hover {
+    background: #f0f8f0 !important;
+    border-color: #4caf50 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.action-buttons .primary-action-button:active {
+    transform: translateY(0px) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.action-buttons .primary-action-button .button-icon {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.action-buttons .primary-action-button .button-text {
+    text-align: center;
+    width: 100%;
+}
+
+.action-buttons .primary-action-button .button-text strong {
+    font-size: 18px;
+    margin: 0 0 8px 0;
+    color: #000000;
+    font-weight: 600;
+    display: block;
+}
+
+.action-buttons .primary-action-button .button-text small {
+    font-size: 14px;
+    margin: 0;
+    color: #666666;
+    line-height: 1.4;
+    display: block;
+}
+
+/* 無効化されたボタンのスタイル */
+.action-buttons .primary-action-button.disabled {
+    background: #f5f5f5 !important;
+    border-color: #cccccc !important;
+    color: #999999 !important;
+    cursor: not-allowed !important;
+}
+
+.action-buttons .primary-action-button.disabled:hover {
+    background: #f5f5f5 !important;
+    border-color: #cccccc !important;
+    transform: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
