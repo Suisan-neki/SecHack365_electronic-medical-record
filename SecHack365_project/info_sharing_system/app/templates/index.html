@@ -11,7 +11,7 @@
     <div id="private-view">
         <div class="user-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
             <div class="user-info">
-                <h2 style="margin: 0; color: #2d3748;">医療DXシステム</h2>
+                <h2 style="margin: 0; color: #2d3748;">患者情報共有システム</h2>
                 {% if current_user.is_authenticated %}
                 <p style="margin: 5px 0 0 0; color: #718096;">
                     ログイン中: <strong>{{ current_user.id }}</strong> 
@@ -30,9 +30,8 @@
                 {% if current_user.is_authenticated %}
             {% if current_user.role == 'admin' or current_user.role == 'doctor' %}
             <a href="{{ url_for('audit_dashboard') }}" style="background: #667eea; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔍 監査ログ</a>
-            <button onclick="showKeySystemStatus()" style="background: #6f42c1; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px; cursor: pointer;">🔑 鍵システム確認</button>
             {% endif %}
-                <a href="{{ url_for('webauthn_register') }}" style="background: #28a745; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔐 WebAuthn登録</a>
+                <a href="{{ url_for('webauthn_management') }}" style="background: #e67e22; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔧 WebAuthn管理</a>
                 <a href="{{ url_for('logout') }}" style="background: #e53e3e; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em;">ログアウト</a>
                 {% else %}
                 <a href="{{ url_for('webauthn_login') }}" style="background: #28a745; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 0.9em; margin-right: 8px;">🔐 WebAuthn</a>
@@ -126,7 +125,7 @@
             
             <!-- 【中重要】EHR接続状態 - 中サイズ -->
             <div class="ehr-connection-status priority-medium">
-                <h4>🔗 電子カルテシステム接続</h4>
+                <h4>🔗 電子カルテシステム接続(仮)</h4>
                 <div class="connection-info">
                     <div class="connection-indicator">
                         <span class="status-dot connected"></span>
@@ -146,10 +145,10 @@
             
             
             <!-- 【低重要】セキュリティ検証 - 小サイズ -->
-            <div class="security-verification-section priority-low">
+            <div class="security-verification-small priority-low">
                 <h5>🔐 セキュリティ検証</h5>
                 <p>システムの暗号化通信・電子署名・データ完全性を検証します</p>
-                <button onclick="openSecurityVerificationPage()" class="security-button">🔒 セキュリティ検証ページを開く</button>
+                <button onclick="toggleSecurityVerification()" class="security-button">🔒 セキュリティ検証を実行</button>
             </div>
         </div>
     </div>
@@ -216,6 +215,44 @@
         
         <div class="security-footer">
             <p>この情報は暗号化により保護されています</p>
+        </div>
+    </div>
+
+    <!-- セキュリティ検証セクション -->
+    <div id="security-verification-section" class="security-verification-container" style="display: none;">
+        <div class="security-content">
+            <div class="verification-section">
+                <div class="verification-header">
+                    <h2>セキュリティ検証の実行</h2>
+                    <button onclick="toggleSecurityVerification()" class="close-security-btn">×</button>
+                </div>
+                <p>以下のセキュリティ項目を検証します：</p>
+                <ul class="security-features-list">
+                    <li><strong>デモ用鍵システム（RSA 2048-bit）</strong> - データの暗号化とデジタル署名に使用。患者データの改ざんを検出し、データの完全性を保証します。</li>
+                    <li><strong>患者データ署名検証</strong> - データの改ざん検知と完全性保証。デジタル署名により、データが改ざんされていないことを確認できます。</li>
+                    <li><strong>監査ログシステム</strong> - 全ての操作の記録と追跡可能性。誰がいつ何をしたかを完全に記録し、セキュリティインシデントの調査を可能にします。</li>
+                    <li><strong>暗号化システム</strong> - ユーザーデータの暗号化保護。パスワードベースの暗号化により、機密データを安全に保存します。</li>
+                    <li><strong>WebAuthn認証システム</strong> - 生体認証による強固な認証。指紋や顔認証により、パスワードに依存しない安全な認証を実現します。</li>
+                    <li><strong>セッション管理</strong> - セキュアなセッション制御。適切なセッションタイムアウトとトークン管理により、不正アクセスを防止します。</li>
+                </ul>
+                
+                <button class="start-verification-btn" onclick="startSecurityVerification()" id="startSecurityBtn">
+                    🚀 セキュリティ検証を開始
+                </button>
+            </div>
+
+            <div class="verification-loading" id="securityLoading" style="display: none;">
+                <p><strong>🔄 セキュリティ検証を実行中...</strong></p>
+                <p>しばらくお待ちください...</p>
+            </div>
+
+            <div class="verification-results" id="securityResults" style="display: none;">
+                <div class="overall-security-status" id="overallSecurityStatus"></div>
+                
+                <div id="securityCheckResults"></div>
+                
+                <div class="security-summary" id="securitySummary"></div>
+            </div>
         </div>
     </div>
 

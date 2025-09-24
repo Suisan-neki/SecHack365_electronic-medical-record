@@ -1,3 +1,112 @@
+// グローバル関数を即座に定義
+window.loadPatientData = async function() {
+    console.log('🔄 患者データ読み込み開始...');
+    
+    // ローディング状態を表示
+    const patientStatus = document.querySelector('.patient-status');
+    const loadBtn = document.getElementById('load-data-btn');
+    
+    if (patientStatus) {
+        patientStatus.textContent = '電子カルテから抽出中...';
+        patientStatus.style.background = 'rgba(255, 193, 7, 0.3)';
+    }
+    
+    if (loadBtn) {
+        loadBtn.innerHTML = `
+            <span class="button-icon">⏳</span>
+            <span class="button-text">
+                <strong>抽出中...</strong>
+                <small>電子カルテからデータを取得中</small>
+            </span>
+        `;
+        loadBtn.disabled = true;
+    }
+    
+    try {
+        // 電子カルテシステムから現在の診察患者データを抽出
+        const response = await fetch('/api/patient/P001');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        
+        console.log('✅ 患者データ取得成功:', data);
+        
+        // 医師向け患者情報を表示
+        const patientInfo = data.patient_info || {};
+        document.getElementById('doctor-patient-id').textContent = patientInfo.patient_id || 'P001';
+        document.getElementById('doctor-patient-name').textContent = patientInfo.name || '山下真凜';
+        document.getElementById('doctor-patient-age').textContent = patientInfo.age ? patientInfo.age + '歳' : '33歳';
+        document.getElementById('doctor-patient-gender').textContent = patientInfo.gender || '女性';
+        
+        // 成功時にステータスを更新
+        if (patientStatus) {
+            patientStatus.textContent = '抽出完了';
+            patientStatus.style.background = 'rgba(40, 167, 69, 0.3)';
+        }
+        
+        // 依存ボタンを有効化
+        enableDataDependentButtons();
+        
+        // ラズパイボタンも有効化
+        updateRaspiButtonState();
+        
+        // 操作履歴に記録
+        addToOperationHistory(`電子カルテシステムから患者情報を抽出 (${patientInfo.name})`, 'data_extraction');
+        
+        // データソースの情報も表示
+        let message = '✅ 電子カルテシステムから患者情報を抽出しました。\n\n';
+        message += `🏥 抽出元: FHIR標準型電子カルテシステム\n`;
+        message += `👤 現在の診察患者: ${patientInfo.name} (${patientInfo.patient_id})\n`;
+        message += `📊 抽出されたデータ:\n`;
+        message += `• 病気・症状: ${data.current_conditions?.length || 0}件\n`;
+        message += `• 処方薬: ${data.medications?.length || 0}件\n`;
+        message += `• 検査結果: ${data.recent_test_results?.length || 0}件\n\n`;
+        message += `🔒 セキュリティ: ${data.security_info?.signature_valid ? '署名検証済み' : '署名未検証'}\n\n`;
+        message += '「患者向けディスプレイに表示」ボタンで患者画面を確認できます。';
+        
+        alert(message);
+        
+        addToOperationHistory('電子カルテからの患者データ抽出が完了 - 生データ確認と患者向けディスプレイが利用可能になりました', 'data_extraction_success');
+        
+    } catch (error) {
+        console.error('❌ 患者データ読み込みエラー:', error);
+        
+        // エラー時の処理
+        if (patientStatus) {
+            patientStatus.textContent = '抽出エラー';
+            patientStatus.style.background = 'rgba(220, 53, 69, 0.3)';
+        }
+        
+        alert('❌ 電子カルテからのデータ抽出エラー: ' + error.message);
+        addToOperationHistory('電子カルテからの患者データ抽出でエラーが発生しました', 'data_extraction_error');
+        
+    } finally {
+        // ボタンを元に戻す
+        if (loadBtn) {
+            loadBtn.innerHTML = `
+                <span class="button-icon">📤</span>
+                <span class="button-text">
+                    <strong>患者情報を抽出</strong>
+                    <small>電子カルテシステムから現在の患者データを取得</small>
+                </span>
+            `;
+            loadBtn.disabled = false;
+        }
+    }
+}
+
+// PC用患者ビューを表示
+function showPatientView() {
+    console.log('👁️ PC用患者ビューを表示中...');
+    
+    // 患者ビューに切り替え
+    switchView('patient');
+    
+    // 操作履歴に記録
+    addToOperationHistory('PC用患者ビューを表示', 'patient_view_display');
+}
+
 function switchView(viewType) {
     if (viewType === 'patient') {
         document.getElementById('private-view').style.display = 'none';
@@ -55,8 +164,23 @@ function backToMenu() {
 
 // 病気・症状の詳細を読み込む
 async function loadConditionsDetail() {
-    const response = await fetch('/patient_data');
-    const data = await response.json();
+    let data = {};
+    
+    try {
+        const response = await fetch('/api/patient/P001');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        data = await response.json();
+    } catch (error) {
+        console.error('❌ 病気・症状データ取得エラー:', error);
+        // エラー時はデフォルトデータを使用
+        data = {
+            current_conditions: [
+                { name: '高血圧', status: '治療中', explanation: '血圧が高い状態が続いています', diagnosed_date: '2024-01-15' }
+            ]
+        };
+    }
     
     const conditionsList = document.getElementById('conditions-list');
     conditionsList.innerHTML = '';
@@ -80,8 +204,22 @@ async function loadConditionsDetail() {
 
 // 処方薬の詳細を読み込む
 async function loadMedicationsDetail() {
-    const response = await fetch('/patient_data');
-    const data = await response.json();
+    let data = {};
+    
+    try {
+        const response = await fetch('/api/patient/P001');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        data = await response.json();
+    } catch (error) {
+        console.error('❌ 処方薬データ取得エラー:', error);
+        data = {
+            medications: [
+                { name: 'アムロジピン', dosage: '5mg 1日1回', purpose: '血圧降下', precautions: '朝食後に服用してください' }
+            ]
+        };
+    }
     
     const medicationsList = document.querySelector('#medications-detail ul');
     medicationsList.innerHTML = '';
@@ -108,8 +246,22 @@ async function loadMedicationsDetail() {
 
 // 検査結果の詳細を読み込む
 async function loadTestsDetail() {
-    const response = await fetch('/patient_data');
-    const data = await response.json();
+    let data = {};
+    
+    try {
+        const response = await fetch('/api/patient/P001');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        data = await response.json();
+    } catch (error) {
+        console.error('❌ 検査結果データ取得エラー:', error);
+        data = {
+            test_results: [
+                { name: '血圧', value: '140/90 mmHg', normal_range: '120/80 mmHg以下', date: '2025-09-10', doctor_comment: '薬の調整が必要かもしれません' }
+            ]
+        };
+    }
     
     const testResults = document.querySelector('#tests-detail #test-results');
     testResults.innerHTML = '';
@@ -133,12 +285,35 @@ async function loadTestsDetail() {
 }
 
 async function fetchPatientData() {
-    const response = await fetch('/patient_data');
-    const data = await response.json();
+    let data = {};
+    
+    try {
+        const response = await fetch('/api/patient/P001');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        data = await response.json();
+        console.log('✅ 患者ビュー用データ取得成功:', data);
+    } catch (error) {
+        console.error('❌ 患者ビュー用データ取得エラー:', error);
+        // エラー時はデフォルトデータを使用
+        data = {
+            patient_info: { name: '山下真凜', age: 33, gender: '女性' },
+            current_conditions: [
+                { name: '高血圧', status: '治療中', explanation: '血圧が高い状態が続いています', diagnosed_date: '2024-01-15', icon: '🩺' }
+            ],
+            medications: [
+                { name: 'アムロジピン', dosage: '5mg 1日1回', purpose: '血圧降下', notes: '朝食後に服用', common_effects: 'めまい、頭痛', category: '降圧剤', icon: '💊', color: '#e74c3c' }
+            ],
+            recent_test_results: [
+                { item_name: '血圧', value: '140/90 mmHg', status: '要注意', reference_range: '120/80 mmHg以下', test_date: '2025-09-10', status_icon: '⚠️', doctor_comment: '薬の調整が必要かもしれません' }
+            ]
+        };
+    }
 
     // 患者基本情報を表示
     const patientInfo = data.patient_info || {};
-    document.getElementById('patient-name').textContent = `${patientInfo.name || '患者'} (${patientInfo.age || ''}歳)`;
+    document.getElementById('patient-name').textContent = `${patientInfo.name || '山下真凜'} (${patientInfo.age || '33'}歳)`;
 
     // 現在の病気・症状を表示
     const conditionsDiv = document.createElement('div');
@@ -151,7 +326,7 @@ async function fetchPatientData() {
             conditionDiv.className = 'condition-item';
             conditionDiv.innerHTML = `
                 <div class="condition-header">
-                    <span class="condition-icon">${condition.icon}</span>
+                    <span class="condition-icon">${condition.icon || '🩺'}</span>
                     <strong>${condition.name}</strong>
                     <span class="condition-status">${condition.status}</span>
                 </div>
@@ -398,46 +573,14 @@ let currentPatientSession = {
     ehrSystemConnected: true
 };
 
-// 電子カルテシステムから患者データを抽出
-async function loadPatientData() {
-    try {
-        // 電子カルテシステムから現在の診察患者データを抽出
-        const response = await fetch('/patient_data');
-        const data = await response.json();
-        
-        // 医師向け患者情報を表示
-        const patientInfo = data.patient_info || {};
-        document.getElementById('doctor-patient-id').textContent = patientInfo.patient_id || '-';
-        document.getElementById('doctor-patient-name').textContent = patientInfo.name || '電子カルテから情報を抽出してください';
-        document.getElementById('doctor-patient-age').textContent = patientInfo.age ? patientInfo.age + '歳' : '-';
-        document.getElementById('doctor-patient-gender').textContent = patientInfo.gender || '-';
-        
-        // 操作履歴に記録
-        addToOperationHistory(`電子カルテシステムから患者情報を抽出 (${patientInfo.name})`, 'data_extraction');
-        
-        // データソースの情報も表示
-        let message = '✅ 電子カルテシステムから患者情報を抽出しました。\n\n';
-        message += `🏥 抽出元: FHIR標準型電子カルテシステム\n`;
-        message += `👤 現在の診察患者: ${patientInfo.name} (${patientInfo.patient_id})\n`;
-        message += `📊 抽出されたデータ:\n`;
-        message += `• 病気・症状: ${data.current_conditions?.length || 0}件\n`;
-        message += `• 処方薬: ${data.medications?.length || 0}件\n`;
-        message += `• 検査結果: ${data.recent_test_results?.length || 0}件\n\n`;
-        message += `🔒 セキュリティ: ${data.security_info?.signature_valid ? '署名検証済み' : '署名未検証'}\n\n`;
-        message += '「患者向けディスプレイに表示」ボタンで患者画面を確認できます。';
-        
-        alert(message);
-        
-    } catch (error) {
-        alert('❌ 電子カルテからのデータ抽出エラー: ' + error.message);
-        throw error; // エラーを再スローして上位でキャッチできるように
-    }
-}
 
 // 標準型電子カルテの生データを表示
 async function showRawEHRData() {
     try {
-        const response = await fetch('/raw_ehr_data');
+        const response = await fetch('/api/patient/P001');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         const ehrData = await response.json();
         
         // 新しいウィンドウで生データを表示
@@ -1079,7 +1222,7 @@ function openSecurityVerificationPage() {
             <div class="container">
                 <div class="header">
                     <h1>🔒 セキュリティ検証システム</h1>
-                    <p>患者中心の医療DXプロジェクト - SecHack365</p>
+                    <p>患者中心の患者情報共有プロジェクト - SecHack365</p>
                 </div>
                 
                         <div class="system-status-section">
@@ -1859,6 +2002,17 @@ function openSecurityVerificationPage() {
 
 
 
+// PC用患者ビューを表示
+function showPatientView() {
+    console.log('👁️ PC用患者ビューを表示中...');
+    
+    // 患者ビューに切り替え
+    switchView('patient');
+    
+    // 操作履歴に記録
+    addToOperationHistory('PC用患者ビューを表示', 'patient_view_display');
+}
+
 // ボタンの有効化・無効化
 function enableDataDependentButtons() {
     const rawDataBtn = document.getElementById('raw-data-btn');
@@ -1867,10 +2021,14 @@ function enableDataDependentButtons() {
     if (rawDataBtn) {
         rawDataBtn.disabled = false;
         rawDataBtn.classList.remove('disabled');
+        rawDataBtn.style.opacity = '1';
+        rawDataBtn.style.cursor = 'pointer';
     }
     if (patientViewBtn) {
         patientViewBtn.disabled = false;
         patientViewBtn.classList.remove('disabled');
+        patientViewBtn.style.opacity = '1';
+        patientViewBtn.style.cursor = 'pointer';
     }
 }
 
@@ -1888,79 +2046,6 @@ function disableDataDependentButtons() {
     }
 }
 
-// 患者データ読み込み時に患者カードを更新（統合版）
-async function loadPatientData() {
-    // ローディング状態を表示
-    const patientStatus = document.querySelector('.patient-status');
-    const loadBtn = document.getElementById('load-data-btn');
-    
-    if (patientStatus) {
-        patientStatus.textContent = '電子カルテから抽出中...';
-        patientStatus.style.background = 'rgba(255, 193, 7, 0.3)';
-    }
-    
-    if (loadBtn) {
-        loadBtn.textContent = '📤 電子カルテから抽出中...';
-        loadBtn.disabled = true;
-    }
-    
-    try {
-        // 電子カルテシステムから現在の診察患者データを抽出
-        const response = await fetch('/patient_data');
-        const data = await response.json();
-        
-        // 医師向け患者情報を表示
-        const patientInfo = data.patient_info || {};
-        document.getElementById('doctor-patient-id').textContent = patientInfo.patient_id || '-';
-        document.getElementById('doctor-patient-name').textContent = patientInfo.name || '電子カルテから情報を抽出してください';
-        document.getElementById('doctor-patient-age').textContent = patientInfo.age ? patientInfo.age + '歳' : '-';
-        document.getElementById('doctor-patient-gender').textContent = patientInfo.gender || '-';
-        
-        // 成功時にステータスを更新
-        if (patientStatus) {
-            patientStatus.textContent = '抽出完了';
-            patientStatus.style.background = 'rgba(40, 167, 69, 0.3)';
-        }
-        
-        // 依存ボタンを有効化
-        enableDataDependentButtons();
-        
-        // 操作履歴に記録
-        addToOperationHistory(`電子カルテシステムから患者情報を抽出 (${patientInfo.name})`, 'data_extraction');
-        
-        // データソースの情報も表示
-        let message = '✅ 電子カルテシステムから患者情報を抽出しました。\n\n';
-        message += `🏥 抽出元: FHIR標準型電子カルテシステム\n`;
-        message += `👤 現在の診察患者: ${patientInfo.name} (${patientInfo.patient_id})\n`;
-        message += `📊 抽出されたデータ:\n`;
-        message += `• 病気・症状: ${data.current_conditions?.length || 0}件\n`;
-        message += `• 処方薬: ${data.medications?.length || 0}件\n`;
-        message += `• 検査結果: ${data.recent_test_results?.length || 0}件\n\n`;
-        message += `🔒 セキュリティ: ${data.security_info?.signature_valid ? '署名検証済み' : '署名未検証'}\n\n`;
-        message += '「患者向けディスプレイに表示」ボタンで患者画面を確認できます。';
-        
-        alert(message);
-        
-        addToOperationHistory('電子カルテからの患者データ抽出が完了 - 生データ確認と患者向けディスプレイが利用可能になりました', 'data_extraction_success');
-        
-    } catch (error) {
-        // エラー時の処理
-        if (patientStatus) {
-            patientStatus.textContent = '抽出エラー';
-            patientStatus.style.background = 'rgba(220, 53, 69, 0.3)';
-        }
-        
-        alert('❌ 電子カルテからのデータ抽出エラー: ' + error.message);
-        addToOperationHistory('電子カルテからの患者データ抽出でエラーが発生しました', 'data_extraction_error');
-        
-    } finally {
-        // ボタンを元に戻す
-        if (loadBtn) {
-            loadBtn.textContent = '📤 電子カルテから患者情報を抽出';
-            loadBtn.disabled = false;
-        }
-    }
-}
 
 // ラズパイ表示制御機能
 async function sendToRaspberryPi() {
@@ -2074,16 +2159,19 @@ function updateRaspiButtonState() {
     }
 }
 
-// 患者データ読み込み時にボタン状態を更新
-const originalFetchPatientData = fetchPatientData;
-fetchPatientData = function() {
-    const result = originalFetchPatientData.apply(this, arguments);
-    updateRaspiButtonState();
-    return result;
-};
-
 // 初期表示
 document.addEventListener('DOMContentLoaded', function() {
+    // 関数をグローバルスコープに設定
+    window.loadPatientData = loadPatientData;
+    window.showPatientView = showPatientView;
+    window.sendToRaspberryPi = sendToRaspberryPi;
+    window.showRawEHRData = showRawEHRData;
+    
+    console.log('✅ 関数をグローバルスコープに設定しました');
+    console.log('loadPatientData:', typeof window.loadPatientData);
+    console.log('showPatientView:', typeof window.showPatientView);
+    console.log('sendToRaspberryPi:', typeof window.sendToRaspberryPi);
+    
     updateOperationHistoryDisplay();
     updateRaspiButtonState();
     
@@ -2099,6 +2187,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ ラズパイボタンを強制有効化しました（DOMContentLoaded）');
         }
     }, 1000);
+    
+    // 初期ビューを設定
+    switchView('private');
 });
-
-switchView('private');

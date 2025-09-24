@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-SecHack365 患者中心の医療DXプロジェクト - 情報共有システム
+SecHack365 患者中心の患者情報共有プロジェクト - 情報共有システム
 モノレポ構成対応版 起動スクリプト
 """
 
@@ -20,7 +20,7 @@ sys.path.insert(0, monorepo_root)  # coreモジュールが含まれるディレ
 from app.app import app
 
 if __name__ == '__main__':
-    print("SecHack365 患者中心の医療DXプロジェクト - 情報共有システム")
+    print("SecHack365 患者中心の患者情報共有プロジェクト - 情報共有システム")
     print("プロジェクトルート:", project_root)
     print("モノレポルート:", monorepo_root)
     print("HTTP サーバーを起動中...")

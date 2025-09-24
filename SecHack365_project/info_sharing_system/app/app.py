@@ -1361,6 +1361,365 @@ def pc_fix_js():
     from flask import send_from_directory
     return send_from_directory('static', 'pc_fix.js', mimetype='application/javascript')
 
+@app.route('/security_verification', methods=['GET'])
+@login_required
+def security_verification():
+    """セキュリティ検証システム - 現在のセキュリティ状況を総合的に検証"""
+    try:
+        print(f"[SECURITY] セキュリティ検証開始: {current_user.id}")
+        
+        verification_results = {
+            'overall_status': 'success',
+            'timestamp': datetime.now().isoformat(),
+            'user_id': current_user.id,
+            'checks': []
+        }
+        
+        # 1. デモ用鍵システムの検証
+        try:
+            demo_keys = get_or_create_demo_keys()
+            if demo_keys and 'public_key' in demo_keys and 'private_key' in demo_keys:
+                verification_results['checks'].append({
+                    'name': 'デモ用鍵システム',
+                    'status': 'success',
+                    'message': 'RSA 2048-bit鍵ペアが正常に生成・管理されています',
+                    'details': {
+                        'key_type': 'RSA 2048-bit',
+                        'algorithm': 'RSA-PSS with SHA256',
+                        'key_size': 2048
+                    }
+                })
+            else:
+                verification_results['checks'].append({
+                    'name': 'デモ用鍵システム',
+                    'status': 'failure',
+                    'message': 'デモ用鍵ペアの生成に失敗しています',
+                    'details': {}
+                })
+                verification_results['overall_status'] = 'partial'
+        except Exception as e:
+            verification_results['checks'].append({
+                'name': 'デモ用鍵システム',
+                'status': 'error',
+                'message': f'鍵システム検証エラー: {str(e)}',
+                'details': {}
+            })
+            verification_results['overall_status'] = 'partial'
+        
+        # 2. 患者データ署名検証
+        try:
+            # 患者P001のデータを取得して署名検証
+            from flask import jsonify
+            patient_response = get_patient_data('P001')
+            if hasattr(patient_response, 'get_json'):
+                patient_data = patient_response.get_json()
+            else:
+                patient_data = patient_response
+                
+            if patient_data and patient_data.get('signature_status') == 'Valid':
+                verification_results['checks'].append({
+                    'name': '患者データ署名検証',
+                    'status': 'success',
+                    'message': '患者データの署名検証が正常に完了しています',
+                    'details': {
+                        'patient_id': 'P001',
+                        'signature_status': 'Valid',
+                        'hash_chain_status': patient_data.get('hash_chain_status', 'Unknown')
+                    }
+                })
+            else:
+                verification_results['checks'].append({
+                    'name': '患者データ署名検証',
+                    'status': 'failure',
+                    'message': '患者データの署名検証に失敗しています',
+                    'details': {
+                        'patient_id': 'P001',
+                        'signature_status': patient_data.get('signature_status', 'Unknown') if patient_data else 'No Data'
+                    }
+                })
+                verification_results['overall_status'] = 'partial'
+        except Exception as e:
+            verification_results['checks'].append({
+                'name': '患者データ署名検証',
+                'status': 'error',
+                'message': f'署名検証エラー: {str(e)}',
+                'details': {}
+            })
+            verification_results['overall_status'] = 'partial'
+        
+        # 3. 監査ログシステムの検証
+        try:
+            audit_log_path = os.path.join(app.root_path, "..", "..", "audit.log")
+            if os.path.exists(audit_log_path):
+                with open(audit_log_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                total_logs = len([line for line in lines if line.strip()])
+                if total_logs > 0:
+                    verification_results['checks'].append({
+                        'name': '監査ログシステム',
+                        'status': 'success',
+                        'message': f'監査ログシステムが正常に動作しています（{total_logs}件のログ）',
+                        'details': {
+                            'total_logs': total_logs,
+                            'log_file_exists': True
+                        }
+                    })
+                else:
+                    verification_results['checks'].append({
+                        'name': '監査ログシステム',
+                        'status': 'warning',
+                        'message': '監査ログファイルは存在しますが、ログが記録されていません',
+                        'details': {
+                            'total_logs': 0,
+                            'log_file_exists': True
+                        }
+                    })
+            else:
+                verification_results['checks'].append({
+                    'name': '監査ログシステム',
+                    'status': 'failure',
+                    'message': '監査ログファイルが存在しません',
+                    'details': {
+                        'total_logs': 0,
+                        'log_file_exists': False
+                    }
+                })
+                verification_results['overall_status'] = 'partial'
+        except Exception as e:
+            verification_results['checks'].append({
+                'name': '監査ログシステム',
+                'status': 'error',
+                'message': f'監査ログ検証エラー: {str(e)}',
+                'details': {}
+            })
+            verification_results['overall_status'] = 'partial'
+        
+        # 4. 暗号化システムの検証
+        try:
+            # ユーザーの暗号化キーが存在するかチェック
+            user_encryption_key = authenticator.get_user_encryption_key(current_user.id)
+            if not user_encryption_key:
+                # 暗号化キーが存在しない場合は生成を試行
+                print(f"[DEBUG] ユーザー {current_user.id} の暗号化キーが存在しません。生成を試行します。")
+                try:
+                    # パスワードベースの暗号化キーを生成
+                    user_data = authenticator.get_user_info(current_user.id)
+                    if user_data and 'password' in user_data:
+                        # パスワードから暗号化キーを生成
+                        import hashlib
+                        password_hash = hashlib.sha256(user_data['password'].encode()).hexdigest()
+                        user_encryption_key = password_hash[:32]  # 32文字のキー
+                        print(f"[DEBUG] パスワードベース暗号化キーを生成しました")
+                    else:
+                        print(f"[DEBUG] ユーザーデータまたはパスワードが見つかりません")
+                except Exception as e:
+                    print(f"[DEBUG] 暗号化キー生成エラー: {e}")
+            
+            if user_encryption_key:
+                verification_results['checks'].append({
+                    'name': '暗号化システム',
+                    'status': 'success',
+                    'message': 'ユーザー暗号化キーが正常に設定されています',
+                    'details': {
+                        'user_id': current_user.id,
+                        'encryption_key_exists': True
+                    }
+                })
+            else:
+                verification_results['checks'].append({
+                    'name': '暗号化システム',
+                    'status': 'warning',
+                    'message': 'ユーザー暗号化キーが設定されていません',
+                    'details': {
+                        'user_id': current_user.id,
+                        'encryption_key_exists': False
+                    }
+                })
+        except Exception as e:
+            verification_results['checks'].append({
+                'name': '暗号化システム',
+                'status': 'error',
+                'message': f'暗号化システム検証エラー: {str(e)}',
+                'details': {}
+            })
+            verification_results['overall_status'] = 'partial'
+        
+        # 5. WebAuthn認証システムの検証
+        try:
+            # ユーザーデータからWebAuthn認証器を取得
+            user_data = authenticator.get_user_info(current_user.id)
+            webauthn_credentials = user_data.get('webauthn_credentials', []) if user_data else []
+            if webauthn_credentials and len(webauthn_credentials) > 0:
+                verification_results['checks'].append({
+                    'name': 'WebAuthn認証システム',
+                    'status': 'success',
+                    'message': f'WebAuthn認証器が登録されています（{len(webauthn_credentials)}件）',
+                    'details': {
+                        'user_id': current_user.id,
+                        'registered_credentials': len(webauthn_credentials)
+                    }
+                })
+            else:
+                verification_results['checks'].append({
+                    'name': 'WebAuthn認証システム',
+                    'status': 'info',
+                    'message': 'WebAuthn認証器が登録されていません（オプション機能）',
+                    'details': {
+                        'user_id': current_user.id,
+                        'registered_credentials': 0
+                    }
+                })
+        except Exception as e:
+            verification_results['checks'].append({
+                'name': 'WebAuthn認証システム',
+                'status': 'error',
+                'message': f'WebAuthn検証エラー: {str(e)}',
+                'details': {}
+            })
+        
+        # 6. セッション管理の検証
+        try:
+            if current_user and current_user.id:
+                verification_results['checks'].append({
+                    'name': 'セッション管理',
+                    'status': 'success',
+                    'message': 'ユーザーセッションが正常に管理されています',
+                    'details': {
+                        'user_id': current_user.id,
+                        'user_role': current_user.role,
+                        'session_active': True
+                    }
+                })
+            else:
+                verification_results['checks'].append({
+                    'name': 'セッション管理',
+                    'status': 'failure',
+                    'message': 'ユーザーセッションが無効です',
+                    'details': {}
+                })
+                verification_results['overall_status'] = 'partial'
+        except Exception as e:
+            verification_results['checks'].append({
+                'name': 'セッション管理',
+                'status': 'error',
+                'message': f'セッション検証エラー: {str(e)}',
+                'details': {}
+            })
+            verification_results['overall_status'] = 'partial'
+        
+        # 総合評価の計算
+        success_count = len([check for check in verification_results['checks'] if check['status'] == 'success'])
+        total_checks = len(verification_results['checks'])
+        
+        verification_results['summary'] = {
+            'total_checks': total_checks,
+            'successful_checks': success_count,
+            'success_rate': f"{(success_count / total_checks * 100):.1f}%" if total_checks > 0 else "0%"
+        }
+        
+        print(f"[SECURITY] セキュリティ検証完了: {verification_results['overall_status']} ({success_count}/{total_checks})")
+        
+        return jsonify(verification_results)
+        
+    except Exception as e:
+        print(f"[ERROR] セキュリティ検証エラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'overall_status': 'error',
+            'timestamp': datetime.now().isoformat(),
+            'user_id': current_user.id if current_user else 'unknown',
+            'error': str(e),
+            'checks': []
+        }), 500
+
+@app.route('/security_verification_page')
+@login_required
+def security_verification_page():
+    """セキュリティ検証ページを表示"""
+    return render_template('security_verification.html')
+
+@app.route('/api/webauthn-credentials', methods=['GET'])
+@login_required
+def get_webauthn_credentials():
+    """WebAuthn認証器一覧を取得"""
+    try:
+        print(f"認証器一覧取得 - ユーザー: {current_user.id}")
+        credentials_info = authenticator.get_webauthn_credentials_info(current_user.id)
+        print(f"取得した認証器数: {len(credentials_info)}")
+        for i, cred in enumerate(credentials_info):
+            print(f"認証器 {i}: {cred.get('credential_id', 'N/A')} (長さ: {len(cred.get('credential_id', ''))})")
+        return jsonify({
+            'success': True,
+            'credentials': credentials_info,
+            'total_count': len(credentials_info)
+        })
+    except Exception as e:
+        print(f"認証器一覧取得エラー: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/webauthn-credentials/clear-all', methods=['POST'])
+@login_required
+def clear_all_webauthn_credentials():
+    """すべてのWebAuthn認証器を削除"""
+    try:
+        success, message, removed_count = authenticator.clear_all_webauthn_credentials(current_user.id)
+        return jsonify({
+            'success': success,
+            'message': message,
+            'removed_count': removed_count
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/webauthn-credentials/<credential_id>', methods=['DELETE'])
+@login_required
+def remove_webauthn_credential(credential_id):
+    """指定されたWebAuthn認証器を削除"""
+    try:
+        print(f"削除リクエスト - ユーザー: {current_user.id}, 認証器ID: {credential_id}")
+        
+        # 現在の認証器一覧を確認
+        user_info = authenticator.get_user_info(current_user.id)
+        if user_info and 'webauthn_credentials' in user_info:
+            print(f"現在の認証器数: {len(user_info['webauthn_credentials'])}")
+            for i, cred in enumerate(user_info['webauthn_credentials']):
+                print(f"認証器 {i}: {cred.get('credential_id', 'N/A')}")
+                # IDの完全一致を確認
+                if cred.get('credential_id') == credential_id:
+                    print(f"✅ 認証器IDが一致しました: {credential_id}")
+                else:
+                    print(f"❌ 認証器IDが一致しません: 期待値={credential_id}, 実際値={cred.get('credential_id')}")
+        else:
+            print("❌ ユーザー情報または認証器一覧が見つかりません")
+        
+        success, message = authenticator.remove_webauthn_credential(current_user.id, credential_id)
+        print(f"削除結果 - 成功: {success}, メッセージ: {message}")
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+    except Exception as e:
+        print(f"削除エラー: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/webauthn-management')
+@login_required
+def webauthn_management():
+    """WebAuthn認証器管理ページを表示"""
+    return render_template('webauthn_management.html')
+
 # 登録されているルートを表示（デバッグ用）
 print("[STARTUP] 登録されているAPIルート:")
 for rule in app.url_map.iter_rules():

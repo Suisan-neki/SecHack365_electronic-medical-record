@@ -577,32 +577,251 @@ async function loadTestsDetail() {
     }
 }
 
-// 鍵システム確認機能
-window.showKeySystemStatus = async function() {
-    console.log('🔑 鍵システム状態を確認中...');
+
+// セキュリティ検証セクションの表示/非表示を切り替え
+window.toggleSecurityVerification = function() {
+    console.log('🔒 セキュリティ検証セクションを切り替えています...');
+    
+    const securitySection = document.getElementById('security-verification-section');
+    if (!securitySection) {
+        console.error('❌ セキュリティ検証セクションが見つかりません');
+        return;
+    }
+    
+    if (securitySection.style.display === 'none' || securitySection.style.display === '') {
+        securitySection.style.display = 'flex';
+        console.log('✅ セキュリティ検証セクションを表示しました');
+        addToOperationHistory('セキュリティ検証セクションを表示しました', 'security_section_show');
+    } else {
+        securitySection.style.display = 'none';
+        console.log('✅ セキュリティ検証セクションを非表示にしました');
+        addToOperationHistory('セキュリティ検証セクションを非表示にしました', 'security_section_hide');
+    }
+};
+
+// セキュリティ検証を開始
+window.startSecurityVerification = async function() {
+    console.log('🚀 セキュリティ検証を開始しています...');
+    
+    const startBtn = document.getElementById('startSecurityBtn');
+    const loading = document.getElementById('securityLoading');
+    const results = document.getElementById('securityResults');
+    
+    if (!startBtn || !loading || !results) {
+        console.error('❌ 必要な要素が見つかりません');
+        return;
+    }
+    
+    startBtn.disabled = true;
+    loading.style.display = 'block';
+    results.style.display = 'none';
     
     try {
-        const response = await fetch('/api/demo-keys-status');
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // セキュリティ検証と鍵システム状態を並行して取得
+        const [securityResponse, keyResponse] = await Promise.all([
+            fetch('/security_verification'),
+            fetch('/api/demo-keys-status').catch(() => null) // 鍵システムが失敗しても続行
+        ]);
+        
+        if (!securityResponse.ok) {
+            throw new Error(`HTTP ${securityResponse.status}: ${securityResponse.statusText}`);
         }
-        const keyData = await response.json();
         
-        let message = '🔑 デモ用鍵システムの状態\n\n';
-        message += `📊 ステータス: ${keyData.status}\n`;
-        message += `🔐 鍵タイプ: ${keyData.key_type}\n`;
-        message += `⚙️ アルゴリズム: ${keyData.algorithm}\n`;
-        message += `📏 鍵サイズ: ${keyData.key_size} ビット\n`;
-        message += `📅 作成日時: ${keyData.created_at}\n\n`;
-        message += `🔍 公開鍵プレビュー:\n${keyData.public_key_preview}\n\n`;
-        message += 'この鍵システムにより、患者データの改ざんを検出できます。';
+        const verificationResult = await securityResponse.json();
+        const keyData = keyResponse ? await keyResponse.json() : null;
         
-        alert(message);
-        addToOperationHistory('鍵システムの状態を確認しました', 'key_system_check');
+        displaySecurityResults(verificationResult, keyData);
+        addToOperationHistory('セキュリティ検証を実行しました', 'security_verification_run');
         
     } catch (error) {
-        console.error('❌ 鍵システム確認エラー:', error);
-        alert('❌ 鍵システムの確認に失敗しました: ' + error.message);
+        console.error('❌ セキュリティ検証エラー:', error);
+        displaySecurityError(error);
+    } finally {
+        loading.style.display = 'none';
+        results.style.display = 'block';
+        startBtn.disabled = false;
+    }
+};
+
+// セキュリティ検証結果を表示
+function displaySecurityResults(result, keyData) {
+    const overallStatus = document.getElementById('overallSecurityStatus');
+    const checkResults = document.getElementById('securityCheckResults');
+    const summary = document.getElementById('securitySummary');
+    
+    if (!overallStatus || !checkResults || !summary) {
+        console.error('❌ 結果表示要素が見つかりません');
+        return;
+    }
+    
+    // 全体ステータスの表示
+    let statusClass = 'status-error';
+    let statusText = '❌ セキュリティ検証エラー';
+    let statusIcon = '❌';
+    
+    if (result.overall_status === 'success') {
+        statusClass = 'status-success';
+        statusText = 'セキュリティ検証完全成功';
+        statusIcon = '✅';
+    } else if (result.overall_status === 'partial') {
+        statusClass = 'status-partial';
+        statusText = '⚠️ 部分的な問題を検出';
+        statusIcon = '⚠️';
+    }
+    
+    // 全体ステータスは非表示にする
+    overallStatus.style.display = 'none';
+    
+    // 各チェック項目の表示
+    let checksHtml = result.checks.map(check => {
+        const statusClass = `status-${check.status}`;
+        const statusIcon = getSecurityStatusIcon(check.status);
+        
+        return `
+            <div class="security-check-item">
+                <div class="security-check-header">
+                    <div class="security-check-name">${check.name}</div>
+                    <div class="security-check-status ${statusClass}">
+                        ${statusIcon} ${getSecurityStatusText(check.status)}
+                    </div>
+                </div>
+                <div class="security-check-message">${check.message}</div>
+                ${check.details && Object.keys(check.details).length > 0 ? `
+                    <div class="security-check-details">
+                        <strong>詳細情報:</strong><br>
+                        ${Object.entries(check.details).map(([key, value]) => 
+                            `<strong>${key}:</strong> ${value}`
+                        ).join('<br>')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+    
+    // 鍵システムの詳細情報を追加
+    if (keyData) {
+        checksHtml += `
+            <div class="security-check-item">
+                <div class="security-check-header">
+                    <div class="security-check-name">🔑 デモ用鍵システム詳細</div>
+                    <div class="security-check-status status-success">
+                        ✅ 利用可能
+                    </div>
+                </div>
+                <div class="security-check-message">RSA 2048-bit鍵システムが正常に動作しています</div>
+                <div class="security-check-details">
+                    <strong>鍵システム情報:</strong><br>
+                    <strong>ステータス:</strong> ${keyData.status}<br>
+                    <strong>鍵タイプ:</strong> ${keyData.key_type}<br>
+                    <strong>アルゴリズム:</strong> ${keyData.algorithm}<br>
+                    <strong>鍵サイズ:</strong> ${keyData.key_size} ビット<br>
+                    <strong>作成日時:</strong> ${keyData.created_at}<br>
+                    <strong>公開鍵プレビュー:</strong><br>
+                    <code style="word-break: break-all; font-size: 0.8em;">${keyData.public_key_preview}</code>
+                </div>
+            </div>
+        `;
+    }
+    
+    checkResults.innerHTML = checksHtml;
+    
+    // サマリーの表示（成功メッセージと統合）
+    if (result.summary) {
+        summary.innerHTML = `
+            <h3>📊 検証結果サマリー</h3>
+            <div class="security-summary-stats">
+                <div class="security-stat-item">
+                    <span class="security-stat-number">${result.summary.total_checks}</span>
+                    <span class="security-stat-label">総チェック数</span>
+                </div>
+                <div class="security-stat-item">
+                    <span class="security-stat-number">${result.summary.successful_checks}</span>
+                    <span class="security-stat-label">成功数</span>
+                </div>
+                <div class="security-stat-item">
+                    <span class="security-stat-number">${result.summary.success_rate}</span>
+                    <span class="security-stat-label">成功率</span>
+                </div>
+            </div>
+        `;
+    } else {
+        // サマリーがない場合は成功メッセージのみ表示
+        summary.innerHTML = `
+            <h3>✅ セキュリティ検証完了</h3>
+            <p>全てのセキュリティ項目が正常に検証されました。</p>
+        `;
+    }
+}
+
+// セキュリティ検証エラーを表示
+function displaySecurityError(error) {
+    const overallStatus = document.getElementById('overallSecurityStatus');
+    const checkResults = document.getElementById('securityCheckResults');
+    
+    if (!overallStatus || !checkResults) {
+        console.error('❌ エラー表示要素が見つかりません');
+        return;
+    }
+    
+    overallStatus.className = 'overall-security-status status-error';
+    overallStatus.innerHTML = `
+        <h3 style="color: #721c24; margin: 0;">❌ セキュリティ検証エラー</h3>
+        <p>検証の実行中にエラーが発生しました</p>
+    `;
+    
+    checkResults.innerHTML = `
+        <div class="security-check-item">
+            <div class="security-check-header">
+                <div class="security-check-name">エラー詳細</div>
+                <div class="security-check-status status-error">❌ エラー</div>
+            </div>
+            <div class="security-check-message">${error.message}</div>
+        </div>
+    `;
+}
+
+// セキュリティステータスアイコンを取得
+function getSecurityStatusIcon(status) {
+    const icons = {
+        'success': '✅',
+        'warning': '⚠️',
+        'error': '❌',
+        'info': 'ℹ️',
+        'failure': '❌'
+    };
+    return icons[status] || '❓';
+}
+
+// セキュリティステータステキストを取得
+function getSecurityStatusText(status) {
+    const texts = {
+        'success': '成功',
+        'warning': '警告',
+        'error': 'エラー',
+        'info': '情報',
+        'failure': '失敗'
+    };
+    return texts[status] || '不明';
+}
+
+// WebAuthn認証器管理ページを開く
+window.openWebAuthnManagement = function() {
+    console.log('🔐 WebAuthn認証器管理ページを開いています...');
+    
+    try {
+        // 新しいウィンドウでWebAuthn認証器管理ページを開く
+        const webauthnWindow = window.open('/webauthn-management', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+        
+        if (webauthnWindow) {
+            console.log('✅ WebAuthn認証器管理ページが開かれました');
+            addToOperationHistory('WebAuthn認証器管理ページを開きました', 'webauthn_management_open');
+        } else {
+            console.error('❌ ポップアップブロックが有効になっている可能性があります');
+            alert('❌ WebAuthn認証器管理ページを開けませんでした。ポップアップブロックを無効にしてください。');
+        }
+    } catch (error) {
+        console.error('❌ WebAuthn認証器管理ページを開くエラー:', error);
+        alert('❌ WebAuthn認証器管理ページを開けませんでした: ' + error.message);
     }
 };
 

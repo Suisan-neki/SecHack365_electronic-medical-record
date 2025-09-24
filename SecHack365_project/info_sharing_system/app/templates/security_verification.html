@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔒 セキュリティ検証システム - SecHack365</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .verification-section {
+            margin-bottom: 40px;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
+        }
+
+        .start-button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .overall-status {
+            text-align: center;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .status-success {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+
+        .status-partial {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+
+        .status-error {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .check-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .check-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .check-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .check-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .check-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .check-message {
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        .check-details {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #495057;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .summary h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .back-button {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .back-button:hover {
+            background: linear-gradient(135deg, #7f8c8d 0%, #6c7b7d 100%);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .summary-stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 セキュリティ検証システム</h1>
+            <p>システムのセキュリティ状況を総合的に検証します</p>
+        </div>
+
+        <div class="content">
+            <div class="verification-section">
+                <h2>セキュリティ検証の実行</h2>
+                <p>以下のセキュリティ項目を検証します：</p>
+                <ul style="margin: 20px 0; padding-left: 20px;">
+                    <li>デモ用鍵システム（RSA 2048-bit）</li>
+                    <li>患者データ署名検証</li>
+                    <li>監査ログシステム</li>
+                    <li>暗号化システム</li>
+                    <li>WebAuthn認証システム</li>
+                    <li>セッション管理</li>
+                </ul>
+                
+                <button class="start-button" onclick="startVerification()" id="startBtn">
+                    🚀 セキュリティ検証を開始
+                </button>
+            </div>
+
+            <div class="loading" id="loading" style="display: none;">
+                <p><strong>🔄 セキュリティ検証を実行中...</strong></p>
+                <p>しばらくお待ちください...</p>
+            </div>
+
+            <div class="results" id="results">
+                <div class="overall-status" id="overallStatus"></div>
+                
+                <div id="checkResults"></div>
+                
+                <div class="summary" id="summary"></div>
+                
+                <button class="back-button" onclick="window.close()">
+                    ← 閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function startVerification() {
+            const startBtn = document.getElementById('startBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            startBtn.disabled = true;
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            
+            try {
+                const response = await fetch('/security_verification');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const verificationResult = await response.json();
+                displayResults(verificationResult);
+                
+            } catch (error) {
+                console.error('セキュリティ検証エラー:', error);
+                displayError(error);
+            } finally {
+                loading.style.display = 'none';
+                results.style.display = 'block';
+            }
+        }
+
+        function displayResults(result) {
+            const overallStatus = document.getElementById('overallStatus');
+            const checkResults = document.getElementById('checkResults');
+            const summary = document.getElementById('summary');
+            
+            // 全体ステータスの表示
+            let statusClass = 'status-error';
+            let statusText = '❌ セキュリティ検証エラー';
+            let statusIcon = '❌';
+            
+            if (result.overall_status === 'success') {
+                statusClass = 'status-success';
+                statusText = '✅ セキュリティ検証完全成功';
+                statusIcon = '✅';
+            } else if (result.overall_status === 'partial') {
+                statusClass = 'status-partial';
+                statusText = '⚠️ 部分的な問題を検出';
+                statusIcon = '⚠️';
+            }
+            
+            overallStatus.className = `overall-status ${statusClass}`;
+            overallStatus.innerHTML = `
+                <h3>${statusIcon} ${statusText}</h3>
+                <p>検証時刻: ${new Date(result.timestamp).toLocaleString('ja-JP')}</p>
+            `;
+            
+            // 各チェック項目の表示
+            checkResults.innerHTML = result.checks.map(check => {
+                const statusClass = `status-${check.status}`;
+                const statusIcon = getStatusIcon(check.status);
+                
+                return `
+                    <div class="check-item">
+                        <div class="check-header">
+                            <div class="check-name">${check.name}</div>
+                            <div class="check-status ${statusClass}">
+                                ${statusIcon} ${getStatusText(check.status)}
+                            </div>
+                        </div>
+                        <div class="check-message">${check.message}</div>
+                        ${check.details && Object.keys(check.details).length > 0 ? `
+                            <div class="check-details">
+                                <strong>詳細情報:</strong><br>
+                                ${Object.entries(check.details).map(([key, value]) => 
+                                    `<strong>${key}:</strong> ${value}`
+                                ).join('<br>')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            // サマリーの表示
+            if (result.summary) {
+                summary.innerHTML = `
+                    <h3>📊 検証結果サマリー</h3>
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">${result.summary.total_checks}</span>
+                            <span class="stat-label">総チェック数</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">${result.summary.successful_checks}</span>
+                            <span class="stat-label">成功数</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">${result.summary.success_rate}</span>
+                            <span class="stat-label">成功率</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function displayError(error) {
+            const overallStatus = document.getElementById('overallStatus');
+            const checkResults = document.getElementById('checkResults');
+            
+            overallStatus.className = 'overall-status status-error';
+            overallStatus.innerHTML = `
+                <h3 style="color: #721c24; margin: 0;">❌ セキュリティ検証エラー</h3>
+                <p>検証の実行中にエラーが発生しました</p>
+            `;
+            
+            checkResults.innerHTML = `
+                <div class="check-item">
+                    <div class="check-header">
+                        <div class="check-name">エラー詳細</div>
+                        <div class="check-status status-error">❌ エラー</div>
+                    </div>
+                    <div class="check-message">${error.message}</div>
+                </div>
+            `;
+        }
+
+        function getStatusIcon(status) {
+            const icons = {
+                'success': '✅',
+                'warning': '⚠️',
+                'error': '❌',
+                'info': 'ℹ️',
+                'failure': '❌'
+            };
+            return icons[status] || '❓';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'success': '成功',
+                'warning': '警告',
+                'error': 'エラー',
+                'info': '情報',
+                'failure': '失敗'
+            };
+            return texts[status] || '不明';
+        }
+
+        // ページ読み込み時に自動実行（オプション）
+        // window.addEventListener('load', startVerification);
+    </script>
+</body>
+</html>
