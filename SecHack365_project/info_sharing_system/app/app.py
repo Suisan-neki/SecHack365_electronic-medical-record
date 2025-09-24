@@ -229,6 +229,191 @@ def initialize_demo_users():
     
     print("[INFO] デモユーザーの初期化が完了しました")
 
+def get_or_create_demo_keys():
+    """
+    デモ用の固定鍵ペアを取得または生成
+    
+    Returns:
+        dict: {'private_key': private_key, 'public_key': public_key} または None
+    """
+    demo_keys_file = os.path.join(app.root_path, "demo_keys.json")
+    
+    # 既存の鍵を読み込み
+    if os.path.exists(demo_keys_file):
+        try:
+            with open(demo_keys_file, 'r', encoding='utf-8') as f:
+                keys_data = json.load(f)
+                # 文字列から鍵オブジェクトに復元
+                from cryptography.hazmat.primitives import serialization
+                private_key = serialization.load_pem_private_key(
+                    keys_data['private_key_pem'].encode(),
+                    password=None
+                )
+                public_key = serialization.load_pem_public_key(
+                    keys_data['public_key_pem'].encode()
+                )
+                print("[DEBUG] 既存のデモ用鍵を読み込みました")
+                return {'private_key': private_key, 'public_key': public_key}
+        except Exception as e:
+            print(f"[WARNING] 既存のデモ用鍵の読み込みに失敗: {e}")
+    
+    # 新しい鍵ペアを生成
+    try:
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.asymmetric import rsa, padding
+        from cryptography.hazmat.primitives import serialization
+        
+        # RSA鍵ペアを生成
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+        )
+        public_key = private_key.public_key()
+        
+        # PEM形式で保存
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ).decode()
+        
+        public_pem = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode()
+        
+        # ファイルに保存
+        keys_data = {
+            'private_key_pem': private_pem,
+            'public_key_pem': public_pem,
+            'created_at': datetime.now().isoformat()
+        }
+        
+        with open(demo_keys_file, 'w', encoding='utf-8') as f:
+            json.dump(keys_data, f, indent=2, ensure_ascii=False)
+        
+        print("[INFO] 新しいデモ用鍵ペアを生成しました")
+        return {'private_key': private_key, 'public_key': public_key}
+        
+    except Exception as e:
+        print(f"[ERROR] デモ用鍵ペアの生成に失敗: {e}")
+        return None
+
+def sign_patient_data(patient_data, private_key):
+    """
+    患者データに署名を付与
+    
+    Args:
+        patient_data (dict): 患者データ
+        private_key: 秘密鍵
+        
+    Returns:
+        str: 16進数文字列の署名
+    """
+    try:
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.asymmetric import padding
+        
+        # データを文字列として結合
+        data_str = json.dumps(patient_data, ensure_ascii=False, sort_keys=True)
+        data_bytes = data_str.encode('utf-8')
+        
+        # 署名を生成
+        signature = private_key.sign(
+            data_bytes,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        
+        # 16進数文字列に変換
+        return signature.hex()
+        
+    except Exception as e:
+        print(f"[ERROR] 署名生成エラー: {e}")
+        return None
+
+def add_signatures_to_existing_data():
+    """
+    既存の患者データに署名を追加（デモ用）
+    """
+    try:
+        # デモ用鍵を取得
+        demo_keys = get_or_create_demo_keys()
+        if not demo_keys:
+            print("[ERROR] デモ用鍵の取得に失敗")
+            return False
+        
+        print("[DEBUG] 既存の患者データを読み込み中...")
+        # 既存の患者データを読み込み（暗号化キーを取得）
+        # 既存のauthenticatorインスタンスを使用
+        temp_authenticator = authenticator
+        
+        # デモ用パスワードで暗号化キーを取得
+        demo_passwords = {
+            'doctor1': 'secure_pass_doc',
+            'nurse1': 'secure_pass_nurse', 
+            'patient1': 'secure_pass_pat',
+            'admin1': 'secure_pass_admin'
+        }
+        
+        encryption_key = None
+        for username, password in demo_passwords.items():
+            try:
+                salt = temp_authenticator.get_user_encryption_salt(username)
+                if salt:
+                    key = temp_authenticator.derive_encryption_key(password, salt)
+                    test_data = load_encrypted_karte_data(key)
+                    if test_data:
+                        encryption_key = key
+                        print(f"[DEBUG] 暗号化キー取得成功: {username}")
+                        break
+            except Exception as e:
+                print(f"[DEBUG] ユーザー {username} のキー取得失敗: {e}")
+                continue
+        
+        if not encryption_key:
+            print("[ERROR] 暗号化キーの取得に失敗")
+            return False
+        
+        encrypted_data = load_encrypted_karte_data(encryption_key)
+        if not encrypted_data:
+            print("[ERROR] 既存データの読み込みに失敗")
+            return False
+        
+        print(f"[DEBUG] 読み込んだ患者データ: {list(encrypted_data.keys())}")
+        
+        # 各患者のデータに署名を追加
+        signatures_added = 0
+        for patient_id, patient_data in encrypted_data.items():
+            if 'medical_records' in patient_data:
+                for i, record in enumerate(patient_data['medical_records']):
+                    print(f"[DEBUG] 患者 {patient_id} レコード {i}: {list(record.keys())}")
+                    if 'data' in record and 'signature' not in record:
+                        # データに署名を追加
+                        signature = sign_patient_data(record['data'], demo_keys['private_key'])
+                        if signature:
+                            record['signature'] = signature
+                            signatures_added += 1
+                            print(f"[INFO] 患者 {patient_id} のレコード {i} に署名を追加しました")
+                    elif 'signature' in record:
+                        print(f"[DEBUG] 患者 {patient_id} レコード {i} は既に署名済み")
+        
+        print(f"[INFO] 合計 {signatures_added} 件の署名を追加しました")
+        
+        # 署名付きデータを保存
+        save_encrypted_karte_data(encrypted_data, encryption_key)
+        print("[INFO] 署名付きデータを保存しました")
+        return True
+        
+    except Exception as e:
+        print(f"[ERROR] 署名追加処理エラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
 def get_or_create_webauthn_encryption_key(username):
     """
     WebAuthn認証用の専用暗号化キーを取得または生成
@@ -371,6 +556,13 @@ def ensure_patient_data():
 
 ensure_patient_data()
 print("[STARTUP] アプリケーション初期化完了")
+
+# デモ用署名の初期化
+print("[STARTUP] デモ用署名を初期化中...")
+if add_signatures_to_existing_data():
+    print("[STARTUP] デモ用署名の初期化が完了しました")
+else:
+    print("[WARNING] デモ用署名の初期化に失敗しました")
 
 @app.route('/')
 def index():
@@ -598,17 +790,35 @@ def get_patient_data(patient_id):
     # 最新のカルテ情報を取得
     latest_record = patient['medical_records'][-1] if patient['medical_records'] else None
 
-    # 署名検証（デモ用）
+    # 署名検証（デモ用 - 適切な実装）
     is_valid_signature = False
+    print(f"[DEBUG] 最新レコード: {latest_record}")
+    
     if latest_record and 'signature' in latest_record and 'data' in latest_record:
+        print(f"[DEBUG] 署名データ発見: {latest_record['signature'][:20]}...")
         try:
-            # 署名対象のデータは文字列として結合されていると仮定
-            signed_data_str = json.dumps(latest_record['data'], ensure_ascii=False, sort_keys=True)
-            signature_bytes = bytes.fromhex(latest_record['signature'])
-            is_valid_signature = verify_signature(public_key, signed_data_str, signature_bytes)
+            # デモ用の固定鍵ペアを取得または生成
+            demo_keys = get_or_create_demo_keys()
+            if demo_keys:
+                # 署名対象のデータを文字列として結合
+                signed_data_str = json.dumps(latest_record['data'], ensure_ascii=False, sort_keys=True)
+                print(f"[DEBUG] 署名対象データ: {signed_data_str[:100]}...")
+                signature_bytes = bytes.fromhex(latest_record['signature'])
+                is_valid_signature = verify_signature(demo_keys['public_key'], signed_data_str, signature_bytes)
+                print(f"[DEBUG] 署名検証結果: {'Valid' if is_valid_signature else 'Invalid'}")
+            else:
+                print("[WARNING] デモ用鍵の取得に失敗")
+                is_valid_signature = False
         except Exception as e:
-            print(f"Signature verification failed: {e}")
+            print(f"[ERROR] 署名検証エラー: {e}")
+            import traceback
+            traceback.print_exc()
             is_valid_signature = False
+    else:
+        print("[DEBUG] 署名データが不足しています")
+        if latest_record:
+            print(f"[DEBUG] 利用可能なキー: {list(latest_record.keys())}")
+        is_valid_signature = False
 
     # ハッシュチェーン検証（デモ用）
     is_valid_hash_chain = hash_chain.is_valid()
@@ -767,6 +977,42 @@ def webauthn_status():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/demo-keys-status', methods=['GET'])
+def get_demo_keys_status():
+    """デモ用鍵の状態を取得"""
+    try:
+        demo_keys = get_or_create_demo_keys()
+        if not demo_keys:
+            return jsonify({
+                'status': 'error',
+                'message': 'デモ用鍵の取得に失敗しました'
+            }), 500
+        
+        # 公開鍵の情報を取得
+        from cryptography.hazmat.primitives import serialization
+        public_pem = demo_keys['public_key'].public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode()
+        
+        # 鍵の詳細情報
+        key_info = {
+            'status': 'success',
+            'key_type': 'RSA 2048-bit',
+            'algorithm': 'RSA-PSS with SHA256',
+            'public_key_preview': public_pem[:100] + '...',
+            'key_size': 2048,
+            'created_at': 'デモ用鍵（起動時に生成）'
+        }
+        
+        return jsonify(key_info)
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'鍵状態の取得に失敗: {str(e)}'
+        }), 500
 
 @app.route('/api/audit-logs', methods=['GET'])
 @login_required
