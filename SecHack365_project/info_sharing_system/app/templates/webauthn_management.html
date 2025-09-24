@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAuthn認証器管理 - SecHack365</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .credential-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .credential-info {
+            flex: 1;
+        }
+        .credential-id {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            word-break: break-all;
+            max-width: 300px;
+            overflow-wrap: break-word;
+        }
+        .credential-meta {
+            color: #6c757d;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        .clear-all-btn {
+            background: #fd7e14;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 20px 0;
+        }
+        .clear-all-btn:hover {
+            background: #e8650e;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #155724;
+        }
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #721c24;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 WebAuthn認証器管理</h1>
+            <nav>
+                <a href="/" class="btn">← メインページに戻る</a>
+                <a href="/security_verification_page" class="btn">🔒 セキュリティ検証</a>
+            </nav>
+        </header>
+
+        <main>
+            <div class="warning-box">
+                <strong>⚠️ 注意:</strong> WebAuthn認証器を削除すると、その認証器でのログインができなくなります。削除前に十分確認してください。
+            </div>
+
+            <div id="message-container"></div>
+
+            <div class="section">
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+                    <h2 style="margin: 0; flex: 1;">登録済み認証器一覧</h2>
+                    <a href="{{ url_for('webauthn_register') }}" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 0.9em; display: inline-flex; align-items: center; gap: 8px;">
+                        ➕ 新しい認証器を登録
+                    </a>
+                    <button onclick="loadWebAuthnCredentials()" style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-size: 0.9em; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                        🔄 一覧を更新
+                    </button>
+                </div>
+                <div id="credentials-list">
+                    <div class="loading">認証器情報を読み込み中...</div>
+                </div>
+                
+                <button id="clear-all-btn" class="clear-all-btn" style="display: none;">
+                    🗑️ すべての認証器を削除
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let credentials = [];
+
+        // ページ読み込み時に認証器一覧を取得
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCredentials();
+        });
+
+        // 認証器一覧を読み込み
+        async function loadCredentials() {
+            try {
+                const response = await fetch('/api/webauthn-credentials');
+                const data = await response.json();
+                
+                if (data.success) {
+                    credentials = data.credentials;
+                    displayCredentials();
+                } else {
+                    showMessage('エラー: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('認証器情報の取得に失敗しました: ' + error.message, 'error');
+            }
+        }
+
+        // 認証器一覧を表示
+        function displayCredentials() {
+            const container = document.getElementById('credentials-list');
+            const clearAllBtn = document.getElementById('clear-all-btn');
+            
+            if (credentials.length === 0) {
+                container.innerHTML = '<div class="credential-item">登録されている認証器はありません。</div>';
+                clearAllBtn.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            credentials.forEach((cred, index) => {
+                // 完全なIDを取得（省略されていない）
+                const fullCredentialId = cred.credential_id;
+                console.log(`認証器 ${index} 完全ID:`, fullCredentialId);
+                
+                html += `
+                    <div class="credential-item">
+                        <div class="credential-info">
+                            <div><strong>認証器 #${index + 1}</strong></div>
+                            <div class="credential-id">${fullCredentialId}</div>
+                            <div class="credential-meta">
+                                作成日時: ${cred.created_at} | 使用回数: ${cred.sign_count}回
+                            </div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteCredential('${fullCredentialId}')">
+                            削除
+                        </button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            clearAllBtn.style.display = 'block';
+        }
+
+        // 個別認証器を削除
+        async function deleteCredential(credentialId) {
+            console.log('削除対象の認証器ID:', credentialId);
+            console.log('エンコード後のID:', encodeURIComponent(credentialId));
+            
+            if (!confirm('この認証器を削除しますか？この操作は取り消せません。')) {
+                return;
+            }
+
+            try {
+                const url = `/api/webauthn-credentials/${encodeURIComponent(credentialId)}`;
+                console.log('リクエストURL:', url);
+                
+                const response = await fetch(url, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                console.log('サーバーレスポンス:', data);
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    loadCredentials(); // 一覧を再読み込み
+                } else {
+                    showMessage('エラー: ' + (data.message || data.error), 'error');
+                }
+            } catch (error) {
+                console.error('削除エラー:', error);
+                showMessage('削除に失敗しました: ' + error.message, 'error');
+            }
+        }
+
+        // すべての認証器を削除
+        document.getElementById('clear-all-btn').addEventListener('click', async function() {
+            if (!confirm('すべての認証器を削除しますか？この操作は取り消せません。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/webauthn-credentials/clear-all', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    loadCredentials(); // 一覧を再読み込み
+                } else {
+                    showMessage('エラー: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('削除に失敗しました: ' + error.message, 'error');
+            }
+        });
+
+        // メッセージを表示
+        function showMessage(message, type) {
+            const container = document.getElementById('message-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type + '-message';
+            messageDiv.textContent = message;
+            
+            container.innerHTML = '';
+            container.appendChild(messageDiv);
+            
+            // 3秒後にメッセージを自動削除
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

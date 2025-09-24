@@ -1030,6 +1030,18 @@ class UserAuthenticator:
         user_data = self.users.get(username)
         if not user_data:
             return None
+        
+        # セキュリティ上重要な情報を除外して返す
+        safe_user_data = {
+            'username': user_data.get('username'),
+            'role': user_data.get('role'),
+            'mfa_enabled': user_data.get('mfa_enabled', False),
+            'webauthn_credentials': user_data.get('webauthn_credentials', []),
+            'encryption_key': user_data.get('encryption_key'),
+            'password': user_data.get('password')  # 暗号化キー生成に必要
+        }
+        
+        return safe_user_data
     
     def _generate_encryption_key(self):
         """
@@ -1205,6 +1217,85 @@ class UserAuthenticator:
         if user_data:
             return user_data.get("salt")
         return None
+    
+    def remove_webauthn_credential(self, username, credential_id):
+        """
+        WebAuthn認証器を削除
+        
+        Args:
+            username (str): ユーザー名
+            credential_id (str): 削除する認証器のID
+            
+        Returns:
+            tuple: (成功フラグ, メッセージ)
+        """
+        user_data = self.users.get(username)
+        if not user_data:
+            return False, "ユーザーが見つかりません"
+        
+        if 'webauthn_credentials' not in user_data:
+            return False, "WebAuthn認証器が登録されていません"
+        
+        # 認証器を検索して削除
+        original_count = len(user_data['webauthn_credentials'])
+        user_data['webauthn_credentials'] = [
+            cred for cred in user_data['webauthn_credentials'] 
+            if cred['credential_id'] != credential_id
+        ]
+        
+        if len(user_data['webauthn_credentials']) < original_count:
+            self._save_users()
+            return True, f"WebAuthn認証器を削除しました（残り: {len(user_data['webauthn_credentials'])}個）"
+        else:
+            return False, "指定された認証器が見つかりません"
+    
+    def clear_all_webauthn_credentials(self, username):
+        """
+        ユーザーのすべてのWebAuthn認証器を削除
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            tuple: (成功フラグ, メッセージ, 削除された認証器数)
+        """
+        user_data = self.users.get(username)
+        if not user_data:
+            return False, "ユーザーが見つかりません", 0
+        
+        if 'webauthn_credentials' not in user_data:
+            return False, "WebAuthn認証器が登録されていません", 0
+        
+        removed_count = len(user_data['webauthn_credentials'])
+        user_data['webauthn_credentials'] = []
+        self._save_users()
+        
+        return True, f"すべてのWebAuthn認証器を削除しました（{removed_count}個）", removed_count
+    
+    def get_webauthn_credentials_info(self, username):
+        """
+        ユーザーのWebAuthn認証器情報を取得
+        
+        Args:
+            username (str): ユーザー名
+            
+        Returns:
+            list: 認証器情報のリスト（credential_id, created_at等）
+        """
+        user_data = self.users.get(username)
+        if not user_data or 'webauthn_credentials' not in user_data:
+            return []
+        
+        credentials_info = []
+        for i, cred in enumerate(user_data['webauthn_credentials']):
+            credentials_info.append({
+                'index': i + 1,
+                'credential_id': cred['credential_id'][:20] + '...',  # 最初の20文字のみ表示
+                'created_at': cred.get('created_at', '不明'),
+                'sign_count': cred.get('sign_count', 0)
+            })
+        
+        return credentials_info
 
 if __name__ == "__main__":
     print("SecHack365 認証システム（MFA対応版） - デモンストレーション")

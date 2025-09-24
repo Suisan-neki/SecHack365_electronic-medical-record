@@ -19,74 +19,8 @@
         ],
         "webauthn_credentials": [
             {
-                "credential_id": "zuEaYBQx1PZGbmWiM_aW2P7zIH8JDCvheRUyhiAMzig=",
-                "public_key": "pQECAyYgASFYIByPuPbps8Ui71YrOMEru6WMROrb-5btOc3lbsj2HAlwIlggBmGTGEzvuwLp7Ix1izE_lYpPysr8nG-qRb4sCKtnmQs=",
-                "sign_count": 0,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "SUGxri4PVku5TpuLJA7XpFzOU2lcNCbAmzXYuxex9mE=",
-                "public_key": "pQECAyYgASFYICFgu7m-zL10a0P3yHtHfgo6O02JLnrwIJsIMGxIA0-sIlgg53g0FfQbWtQzEkB0o_IyAUeWiOMzuhcu8e0L-OLUd7s=",
-                "sign_count": 6,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "tT1a9LKf_q9vGirr2YZbU8SSVJkzb_rNsiMzrwiMXpo=",
-                "public_key": "pQECAyYgASFYIN2LHjw5bAkU0-9n2DjW3S-td6VsLcVngMk-VFmQ5yILIlggDiLbBJ5UZMLZsKOwnilYpw57rqFVVxH_xLoNr2yqIGk=",
-                "sign_count": 0,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "isZuA10wgT_ZODJ11mz2DzmBX2vTnBfzsvTXkndWau8=",
-                "public_key": "pQECAyYgASFYIIasN9Nv6e5q-yJ6eaNm1ZsmnzpiMbjepVRrRctnlR4MIlggQgxdLa5JkQtTViiPwBpdH37w-MyJI8O3w0RJtjyWXr4=",
-                "sign_count": 0,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "nne_lXyIwEuYCFH5ymvA4PJLpdPp5YD_eLStQYFCYdM=",
-                "public_key": "pQECAyYgASFYIAn1PifuaDlE8jrjz9ifpk_bfnYNT_0BWasYlDIqzF3pIlgg-jB4j0qTSdAJz7zRQMkmWGlrt6Cpsmow0n0JGzcZIsQ=",
-                "sign_count": 0,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "Tb5FEelw30hJhAoo9izt4ug9EGgLJHglOu-3ZOTxKm0=",
-                "public_key": "pQECAyYgASFYIM1JjEypZqx5OY9ae_Rtyd3-loc4_eSU8dkg4Wgm7URXIlggR4rAaOqHeRpe8dJ_5-r6f9U9-HXVSqYVmAAvo22JJdc=",
-                "sign_count": 0,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "ysXgROiqjIxOGbgfORntRoq_hRHBVC0dV4EPF_S4HbQ=",
-                "public_key": "pQECAyYgASFYIGXecrWmTjrXQqfckQE7qra6Pd3BHudzupl0D9AsUB12Ilgg_xRBBBylME2bCbJ-lhdqow7LcbvFpXTcFQWSrs3fUbE=",
-                "sign_count": 0,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "HyjVaPEojwaBcqAVbGdRR7WIajUjYTBzUKliOfQV1sw=",
-                "public_key": "pQECAyYgASFYIHupMHspzG1QB7_AkoSLnZWJmGbhhbA_4l7wCQeMIGIhIlggVEOW4zzD-5GiEhmu_frZkZh5clbDQ-hLtHF59622-Po=",
-                "sign_count": 0,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "_ENzOinG75IeBWA9L16FZLyGzdGB7eWrHljOCA435cM=",
-                "public_key": "pQECAyYgASFYINJOmyyX2WaJF1qzZrsy1VAjnAtG6CCQcQyjYVvJK8-FIlggpg6z5Q-ZZgtjElBn6YFEGVvkXgN0GNwgEBqCfPgbbO0=",
-                "sign_count": 0,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "RcZVvnGqHAJ21EgAY4Ktz0NGGelhPz9xcjuYfHiCYNE=",
-                "public_key": "pQECAyYgASFYIDeog2jQSGYVSMSClzrR-ABG4WVSZg3CH_HvbZtGIe6PIlggPx1Ef12cZIBXHwLTy-X2rLnnoeH_DG_vkpPMVoMMGd4=",
-                "sign_count": 0,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "9Hqaqvmou6se5s9a-HV4K2OOLqr_rrCoJRYSgse63GI=",
-                "public_key": "pQECAyYgASFYICd93k81Oex1yqTTqC-Ak5ligEWmYNkBvGwJctDUpQeSIlgguYAOOSk0WtkuHm7FteEu3fhd7XbCHHearVPmP2GQVCk=",
-                "sign_count": 0,
-                "created_at": "{\"timestamp\": \"auto-generated\"}"
-            },
-            {
-                "credential_id": "X2PNDInG1a6hN_IpF1KwTEtF_VQtTNlffHe0MsyqCcA=",
-                "public_key": "pQECAyYgASFYIK-9BcsfU9BFwT2T_g_UipuwlkO1D-Q4wD3aJ80b41wKIlgg0G089k6MU987XHf7ruN9cxu1letk3u_v_dZFO3pIglU=",
+                "credential_id": "Im0o5n6GCNJ8HPB3Up0L6sf57SLelSpXev3uDg8PpHY=",
+                "public_key": "pQECAyYgASFYIOmHstPfw8vCL-fiI5ou7GjsHG6OEqbQAKe-AjwasAVZIlggtt6UqxXBHnmtNjeuW6yaR7700Edx0EHHSbQRw3x4-eU=",
                 "sign_count": 0,
                 "created_at": "{\"timestamp\": \"auto-generated\"}"
             }

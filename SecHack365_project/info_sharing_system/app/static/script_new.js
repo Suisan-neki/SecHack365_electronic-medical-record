@@ -1,8 +1,8 @@
-// SecHack365 医療DXシステム - 新しいJavaScript（Flask-Login対応）
+// SecHack365 患者情報共有システム - 新しいJavaScript（Flask-Login対応）
 
 // ページ読み込み時の初期化
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('SecHack365 医療DXシステム - Flask-Login版');
+    console.log('SecHack365 患者情報共有システム - Flask-Login版');
     
     // 古い認証システムの要素を非表示にする
     const oldAuthSection = document.getElementById('auth-section');
