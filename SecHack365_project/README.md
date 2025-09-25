@@ -1,12 +1,12 @@
-# SecHack365 医療情報共有システム
+# 患者情報共有システム
 
-患者の医療情報アクセス権を技術で保障し、医療従事者との協働を促進するシステムです。
+お医者さんと患者さんが、安全に医療情報を共有できるWebアプリケーションです。
 
 ## プロジェクト構造
 
 ```
 SecHack365_project/
-├── info_sharing_system/         # 患者向け情報共有システム
+├── info_sharing_system/         # メインアプリケーション
 │   ├── app/
 │   │   ├── app.py              # Flaskアプリケーション
 │   │   ├── templates/          # HTMLテンプレート
@@ -14,15 +14,11 @@ SecHack365_project/
 │   │   └── certs/              # SSL証明書
 │   └── run_app.py              # 起動スクリプト
 │
-├── ehr_system/                  # 電子カルテシステム（開発予定）
-│   └── app/
-│
-├── core/                        # 共通モジュール
-│   ├── authentication.py       # 認証機能
-│   ├── authorization.py        # 認可機能
-│   ├── digital_signature.py    # 電子署名
-│   ├── hash_chain.py           # ハッシュチェーン
-│   └── ehr_translator.py       # データ翻訳
+├── core/                        # 共通セキュリティモジュール
+│   ├── authentication.py       # 認証システム
+│   ├── digital_signature.py    # デジタル署名
+│   ├── data_encryption.py      # データ暗号化
+│   └── audit_logger.py         # 監査ログ
 │
 ├── scripts/
 │   └── generate_cert.py        # SSL証明書生成
@@ -37,8 +33,8 @@ SecHack365_project/
 
 ```bash
 # リポジトリのクローン
-git clone <repository-url>
-cd SecHack365_project
+git clone https://github.com/Suisan-neki/SecHack365_electronic-medical-record.git
+cd SecHack365_electronic-medical-record/SecHack365_project
 
 # 仮想環境の作成（推奨）
 python -m venv venv
@@ -59,44 +55,50 @@ pip install -r requirements.txt
 # 情報共有システムディレクトリに移動
 cd info_sharing_system
 
-# アプリケーションを起動（SSL証明書は自動生成）
+# アプリケーションを起動
 python run_app.py
 ```
 
 ### アクセス
 
-- URL: https://localhost:5000
-- 自己署名証明書の警告が表示された場合は「詳細設定」→「localhost に進む」を選択
+- URL: http://localhost:5001
+- デモアカウント: doctor1, admin1, patient1
 
-## 機能
+## 実装済み機能
 
-### セキュリティ機能
+### 🔐 セキュリティ機能
+- **デジタル署名**: データが改ざんされていないことを証明する技術（RSA 2048bit）
+- **暗号化**: 情報を暗号化して第三者に見られないように保護（AES-256-GCM）
+- **多要素認証**: パスワードに加えて、スマホアプリや指紋認証で二重にセキュリティを確保
+- **アクセス制御**: お医者さん、患者さんなど、役割に応じて見られる情報を制限
+- **監査ログ**: 誰がいつ何をしたかを記録して、不正アクセスを防ぐ
 
-- HTTPS通信（TLS暗号化）
-- 電子署名（RSA-PSS + SHA-256）
-- ハッシュチェーン（SHA-256ベース）
-- 認証・認可システム（RBAC/ABAC）
-- 多要素認証（TOTP）
-- WebAuthn（FIDO2）対応
+### 👥 使いやすい画面
+- **お医者さん向け画面**: 患者さんの情報を安全に管理・表示
+- **患者さん向け画面**: 医療用語を分かりやすく表示
+- **アクセシビリティ機能**: 大きな文字・ふりがな表示で、高齢の方にも見やすく
+- **リアルタイム表示**: 現在時刻を自動更新
 
-### 主要機能
+### 📊 システム管理機能
+- **セキュリティ検証**: システム全体のセキュリティ状況を自動チェック
+- **認証器管理**: 指紋認証などの認証器を登録・削除・管理
+- **操作履歴**: 誰がいつ何をしたかの記録を確認
 
-- 医療情報の平易化（FHIR → 患者向け日本語）
-- 視覚的な情報表示
-- 権限管理（職種別アクセス制御）
-- 操作履歴の記録
-- EHRシステム連携
+## 使用技術
 
-## 技術情報
+- **プログラム言語**: Python 3.9+（Webアプリケーション作成）
+- **セキュリティ**: 暗号化ライブラリ、指紋認証（WebAuthn）
+- **認証システム**: ログイン機能、二段階認証
+- **画面表示**: HTML5, CSS3, JavaScript（Webページ作成）
+- **データ形式**: JSON（データの保存形式）
 
-### 技術スタック
+## デモアカウント
 
-- バックエンド: Python 3.9+, Flask
-- フロントエンド: HTML5, CSS3, JavaScript
-- セキュリティ: cryptography, WebAuthn
-- データ形式: FHIR準拠JSON
+- **doctor1** (医師): パスワード認証 + MFA/WebAuthn対応
+- **admin1** (管理者): パスワード認証 + MFA対応
+- **patient1** (患者): パスワード認証対応
 
-### 開発用コマンド
+## 開発用コマンド
 
 ```bash
 # SSL証明書の手動生成
@@ -112,10 +114,10 @@ python run_app.py
 
 ## 今後の開発予定
 
-- 院内電子カルテシステムの実装
-- システム間連携API
-- 監査ログの体系化
-- パフォーマンス監視
+- [ ] ラズパイ（小型コンピュータ）での表示機能
+- [ ] 医療データの標準形式（FHIR）への対応
+- [ ] より多くの患者データの管理
+- [ ] スマホアプリの開発
 
 ## トラブルシューティング
 
@@ -130,4 +132,8 @@ pip install -r requirements.txt --force-reinstall
 ```
 
 ### ポートエラー
-5000番ポートが使用中の場合は、他のアプリケーションを停止するか、`run_app.py`内のポート番号を変更してください。
+5001番ポートが使用中の場合は、他のアプリケーションを停止するか、`run_app.py`内のポート番号を変更してください。
+
+## ライセンス
+
+このプロジェクトはSecHack365の一環として開発されています。
