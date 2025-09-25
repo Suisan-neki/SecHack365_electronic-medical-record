@@ -570,7 +570,7 @@ def index():
     if current_user.is_authenticated:
         return render_template('index.html', username=current_user.id, role=current_user.role)
     else:
-    return render_template('index.html')
+        return render_template('index.html')
 
 @app.route('/api/test')
 def api_test():
@@ -748,11 +748,11 @@ def get_patient_data(patient_id):
                             current_user.encryption_key = webauthn_key
                             encryption_key_found = True
                             print(f"[SUCCESS] WebAuthn暗号化キーでデータアクセス成功: {current_user.id}")
-    except Exception as e:
+                    except Exception as e:
                         print(f"[WARNING] WebAuthn暗号化キーで復号失敗: {e}")
             
             if not encryption_key_found:
-        return jsonify({
+                return jsonify({
                     "error": "暗号化データの復号に失敗しました。データが破損している可能性があります。",
                     "auth_method": "decryption_failed"
                 }), 401
@@ -898,7 +898,7 @@ def add_medical_record(patient_id):
                 # 現在のユーザーオブジェクトに暗号化キーを設定
                 current_user.encryption_key = webauthn_key
                 print(f"[INFO] WebAuthn暗号化キーを設定しました: {current_user.id}")
-    else:
+            else:
                 return jsonify({
                     "error": "暗号化キーが利用できません。パスワードでログインしてください。",
                     "auth_method": "password_required"
@@ -1086,7 +1086,7 @@ def get_audit_logs():
                 
                 stats['activeUsers'] = len(active_users)
                 
-    except Exception as e:
+            except Exception as e:
                 print(f"[ERROR] 監査ログ読み込みエラー: {e}")
                 
         # 最新のログから順に並び替え
@@ -1438,7 +1438,7 @@ def security_verification():
                     }
                 })
                 verification_results['overall_status'] = 'partial'
-    except Exception as e:
+        except Exception as e:
             verification_results['checks'].append({
                 'name': '患者データ署名検証',
                 'status': 'error',
@@ -1475,7 +1475,7 @@ def security_verification():
                             'log_file_exists': True
                         }
                     })
-        else:
+            else:
                 verification_results['checks'].append({
                     'name': '監査ログシステム',
                     'status': 'failure',
@@ -1486,7 +1486,7 @@ def security_verification():
                     }
                 })
                 verification_results['overall_status'] = 'partial'
-    except Exception as e:
+        except Exception as e:
             verification_results['checks'].append({
                 'name': '監査ログシステム',
                 'status': 'error',
@@ -1668,7 +1668,7 @@ def clear_all_webauthn_credentials():
     """すべてのWebAuthn認証器を削除"""
     try:
         success, message, removed_count = authenticator.clear_all_webauthn_credentials(current_user.id)
-    return jsonify({
+        return jsonify({
             'success': success,
             'message': message,
             'removed_count': removed_count
@@ -1702,8 +1702,8 @@ def remove_webauthn_credential(credential_id):
         
         success, message = authenticator.remove_webauthn_credential(current_user.id, credential_id)
         print(f"削除結果 - 成功: {success}, メッセージ: {message}")
-    
-    return jsonify({
+        
+        return jsonify({
             'success': success,
             'message': message
         })
