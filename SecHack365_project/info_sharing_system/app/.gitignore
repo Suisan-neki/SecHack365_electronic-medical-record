@@ -1,0 +1,42 @@
+# 機微ファイルをリポジトリから除外
+
+# ユーザーデータベース
+user_db.json
+
+# WebAuthn暗号化キー
+webauthn_encryption_keys.json
+
+# 暗号化された患者データ
+demo_karte_encrypted.json
+
+# 署名鍵/証明書は全除外（必要なら README.md だけ許可）
+certs/
+!certs/
+certs/*
+!certs/README.md
+
+# 一時ファイル
+*.tmp
+*.log
+*.bak
+
+# Pythonキャッシュ
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 環境変数ファイル
+.env
+.env.local
+.env.production
+
+# IDE設定
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
