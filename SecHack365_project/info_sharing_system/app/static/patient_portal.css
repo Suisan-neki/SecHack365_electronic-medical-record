@@ -1,0 +1,488 @@
+/* ======================================== */
+/* 患者ポータル専用スタイル */
+/* ======================================== */
+
+.patient-portal-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* ヘッダーセクション */
+.patient-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.patient-info h1 {
+    margin: 0 0 10px 0;
+    font-size: 2.5em;
+    font-weight: 300;
+}
+
+.patient-identity h2 {
+    margin: 0 0 5px 0;
+    font-size: 1.8em;
+    font-weight: 500;
+}
+
+.patient-id {
+    margin: 0;
+    opacity: 0.8;
+    font-size: 1.1em;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.language-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.language-selector label {
+    font-weight: 500;
+}
+
+.language-selector select {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: white;
+    color: #333;
+    font-size: 14px;
+}
+
+.refresh-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+/* メインコンテンツ */
+.patient-main {
+    display: grid;
+    gap: 30px;
+}
+
+/* 同意管理セクション */
+.consent-section {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.consent-section h3 {
+    margin: 0 0 25px 0;
+    color: #2d3748;
+    font-size: 1.5em;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 10px;
+}
+
+.consent-cards {
+    display: grid;
+    gap: 20px;
+}
+
+.consent-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 25px;
+    transition: all 0.3s ease;
+    background: #fafafa;
+}
+
+.consent-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+}
+
+.consent-card h4 {
+    margin: 0 0 15px 0;
+    color: #2d3748;
+    font-size: 1.3em;
+}
+
+.consent-description {
+    margin: 0 0 20px 0;
+    color: #4a5568;
+    line-height: 1.6;
+    font-size: 1.1em;
+}
+
+.consent-controls {
+    margin-bottom: 15px;
+}
+
+.consent-toggle {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: 500;
+}
+
+.consent-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    width: 60px;
+    height: 30px;
+    background: #cbd5e0;
+    border-radius: 15px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.consent-toggle input[type="checkbox"]:checked + .toggle-slider {
+    background: #667eea;
+}
+
+.consent-toggle input[type="checkbox"]:checked + .toggle-slider::before {
+    transform: translateX(30px);
+}
+
+.toggle-label {
+    color: #2d3748;
+}
+
+.consent-details {
+    background: #f7fafc;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    margin-top: 15px;
+}
+
+.consent-details p {
+    margin: 5px 0;
+    color: #4a5568;
+    font-size: 0.95em;
+}
+
+/* 医療情報セクション */
+.medical-info-section {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.medical-info-section h3 {
+    margin: 0 0 25px 0;
+    color: #2d3748;
+    font-size: 1.5em;
+    border-bottom: 3px solid #48bb78;
+    padding-bottom: 10px;
+}
+
+.info-controls {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #f7fafc;
+    border-radius: 10px;
+}
+
+.view-options {
+    display: flex;
+    gap: 20px;
+}
+
+.view-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.view-options input[type="radio"] {
+    accent-color: #48bb78;
+}
+
+.medical-cards {
+    display: grid;
+    gap: 20px;
+}
+
+.medical-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 25px;
+    background: #fafafa;
+    transition: all 0.3s ease;
+}
+
+.medical-card:hover {
+    border-color: #48bb78;
+    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.1);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.card-header h4 {
+    margin: 0;
+    color: #2d3748;
+    font-size: 1.4em;
+}
+
+.record-date {
+    color: #718096;
+    font-size: 0.9em;
+    background: #edf2f7;
+    padding: 5px 10px;
+    border-radius: 15px;
+}
+
+.card-content {
+    margin-bottom: 20px;
+}
+
+.info-item {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #4a5568;
+    min-width: 80px;
+    margin: 0;
+}
+
+.info-item span {
+    color: #2d3748;
+    flex: 1;
+}
+
+.explanation {
+    flex: 1;
+}
+
+.explanation p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.simple-text {
+    color: #2d3748;
+    font-size: 1.1em;
+}
+
+.detailed-text {
+    color: #4a5568;
+    font-size: 1em;
+}
+
+.card-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+}
+
+.question-btn, .download-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.question-btn {
+    background: #667eea;
+    color: white;
+}
+
+.question-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-2px);
+}
+
+.download-btn {
+    background: #48bb78;
+    color: white;
+}
+
+.download-btn:hover {
+    background: #38a169;
+    transform: translateY(-2px);
+}
+
+/* 質問セクション */
+.questions-section {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.questions-section h3 {
+    margin: 0 0 25px 0;
+    color: #2d3748;
+    font-size: 1.5em;
+    border-bottom: 3px solid #ed8936;
+    padding-bottom: 10px;
+}
+
+.question-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#question-text {
+    width: 100%;
+    min-height: 120px;
+    padding: 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+#question-text:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.question-options {
+    display: flex;
+    gap: 30px;
+}
+
+.question-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.question-options input[type="checkbox"] {
+    accent-color: #ed8936;
+}
+
+.submit-question-btn {
+    background: #ed8936;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    align-self: flex-start;
+}
+
+.submit-question-btn:hover {
+    background: #dd6b20;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(237, 137, 54, 0.3);
+}
+
+/* フッター */
+.patient-footer {
+    background: #2d3748;
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    margin-top: 30px;
+}
+
+.patient-footer p {
+    margin: 10px 0;
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .patient-header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .consent-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .view-options {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .card-actions {
+        flex-direction: column;
+    }
+    
+    .question-options {
+        flex-direction: column;
+        gap: 15px;
+    }
+}
