@@ -21,7 +21,7 @@
             {
                 "credential_id": "Im0o5n6GCNJ8HPB3Up0L6sf57SLelSpXev3uDg8PpHY=",
                 "public_key": "pQECAyYgASFYIOmHstPfw8vCL-fiI5ou7GjsHG6OEqbQAKe-AjwasAVZIlggtt6UqxXBHnmtNjeuW6yaR7700Edx0EHHSbQRw3x4-eU=",
-                "sign_count": 2,
+                "sign_count": 3,
                 "created_at": "{\"timestamp\": \"auto-generated\"}"
             }
         ],

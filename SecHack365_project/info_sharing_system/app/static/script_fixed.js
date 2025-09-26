@@ -868,3 +868,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初期ビューを設定
     switchView('private');
 });
+
+// 患者ポータルを開く関数
+window.openPatientPortal = function() {
+    console.log('患者ポータルを開きます...');
+    
+    // 新しいタブで患者ポータルを開く
+    const patientPortalUrl = '/patient/P001';
+    window.open(patientPortalUrl, '_blank');
+    
+    // 操作履歴に記録
+    addToOperationHistory('患者ポータルを開きました', 'info');
+};
