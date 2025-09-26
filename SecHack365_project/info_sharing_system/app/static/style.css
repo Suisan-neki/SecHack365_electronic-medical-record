@@ -558,6 +558,62 @@ ul {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
+/* ======================================== */
+/* 患者ポータルリンク - メインページ用スタイル */
+/* ======================================== */
+.patient-portal-link {
+    background: #ffffff;
+    margin: 16px 0;
+    padding: 20px;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.patient-portal-link:hover {
+    background: #f0f8f0;
+    border-color: #4caf50;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.patient-portal-link h5 {
+    margin: 0 0 8px 0;
+    color: #2d3748;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.patient-portal-link p {
+    margin: 0 0 15px 0;
+    color: #666666;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.patient-portal-btn {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.patient-portal-btn:hover {
+    background: #5a67d8;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
 
 /* 操作履歴（アクティビティフィード） */
 .activity-feed {

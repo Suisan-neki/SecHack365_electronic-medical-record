@@ -1720,6 +1720,153 @@ def webauthn_management():
     """WebAuthn認証器管理ページを表示"""
     return render_template('webauthn_management.html')
 
+# ========================================
+# 患者ポータル関連のルート
+# ========================================
+
+@app.route('/patient/<patient_id>')
+def patient_portal(patient_id):
+    """患者ポータルページを表示"""
+    try:
+        # 患者情報を取得
+        patient_data = load_patient_data()
+        if patient_id not in patient_data:
+            flash('患者情報が見つかりません', 'error')
+            return redirect(url_for('index'))
+        
+        patient_info = patient_data[patient_id]['patient_info']
+        
+        # 同意状況を取得（デフォルト値）
+        consent_status = {
+            'family_sharing': True,
+            'emergency_sharing': True,
+            'research_sharing': False
+        }
+        
+        # 医療記録を取得し、説明を構造化
+        medical_records = []
+        for record in patient_data[patient_id]['medical_records']:
+            structured_record = {
+                'id': f"record_{len(medical_records) + 1}",
+                'timestamp': record['timestamp'],
+                'diagnosis': record['data']['diagnosis'],
+                'diagnosis_simple': get_simple_explanation(record['data']['diagnosis']),
+                'diagnosis_detailed': get_detailed_explanation(record['data']['diagnosis']),
+                'medication': record['data']['medication'],
+                'doctor': record['data']['doctor'],
+                'explanation_simple': get_simple_explanation(record['data']['notes']),
+                'explanation_detailed': get_detailed_explanation(record['data']['notes'])
+            }
+            medical_records.append(structured_record)
+        
+        return render_template('patient_portal.html',
+                             patient_info=patient_info,
+                             consent_status=consent_status,
+                             medical_records=medical_records)
+    
+    except Exception as e:
+        print(f"患者ポータルエラー: {str(e)}")
+        flash('患者ポータルの読み込みに失敗しました', 'error')
+        return redirect(url_for('index'))
+
+@app.route('/api/patient/consent', methods=['POST'])
+def update_patient_consent():
+    """患者の同意設定を更新"""
+    try:
+        data = request.get_json()
+        consent_type = data.get('consent_type')
+        consent_given = data.get('consent_given')
+        timestamp = data.get('timestamp')
+        
+        print(f"同意設定更新: {consent_type} = {consent_given}")
+        
+        # ここで実際の同意設定をデータベースに保存
+        # 現在はログ出力のみ
+        print(f"同意設定が記録されました: {consent_type}={consent_given} at {timestamp}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': '同意設定が更新されました'
+        })
+    
+    except Exception as e:
+        print(f"同意設定更新エラー: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/patient/question', methods=['POST'])
+def submit_patient_question():
+    """患者からの質問を送信"""
+    try:
+        data = request.get_json()
+        question = data.get('question')
+        urgent = data.get('urgent', False)
+        share_with_family = data.get('share_with_family', False)
+        timestamp = data.get('timestamp')
+        
+        print(f"患者質問受信: {question[:50]}... (緊急: {urgent}, 家族共有: {share_with_family})")
+        
+        # ここで実際の質問をデータベースに保存
+        # 医師に通知を送信
+        # 現在はログ出力のみ
+        print(f"質問が記録されました: {question} at {timestamp}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': '質問が送信されました'
+        })
+    
+    except Exception as e:
+        print(f"質問送信エラー: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/patient/record/<record_id>/download')
+def download_patient_record(record_id):
+    """患者の医療記録をダウンロード"""
+    try:
+        print(f"記録ダウンロード要求: {record_id}")
+        
+        # ここで実際のPDF生成とダウンロード処理
+        # 現在はダミーデータを返す
+        from flask import make_response
+        response = make_response("医療記録のPDFデータ（ダミー）")
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=medical_record_{record_id}.pdf'
+        
+        return response
+    
+    except Exception as e:
+        print(f"記録ダウンロードエラー: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+def get_simple_explanation(text):
+    """医療用語をわかりやすい言葉に変換"""
+    explanations = {
+        'インフルエンザ': 'インフルエンザは、ウイルスが原因で起こる感染症です。高熱、頭痛、筋肉痛などの症状が出ます。',
+        '軽度の貧血': '貧血は、血液中の赤血球が少ない状態です。疲れやすさや息切れなどの症状が出ることがあります。',
+        'タミフル 75mg': 'タミフルは、インフルエンザの治療薬です。ウイルスの増殖を抑えて、症状を軽くします。',
+        '鉄剤 100mg': '鉄剤は、貧血の治療薬です。血液を作るのに必要な鉄分を補給します。'
+    }
+    return explanations.get(text, text)
+
+def get_detailed_explanation(text):
+    """詳細な医学的説明を提供"""
+    explanations = {
+        'インフルエンザ': 'インフルエンザは、インフルエンザウイルス（A型、B型、C型）による急性呼吸器感染症です。主な症状は38℃以上の高熱、頭痛、筋肉痛、関節痛、全身倦怠感、食欲不振などです。潜伏期間は1-3日で、感染力が強く、特に高齢者や基礎疾患を持つ方では重症化する可能性があります。',
+        '軽度の貧血': '貧血は、血液中のヘモグロビン濃度が基準値以下に低下した状態です。軽度の貧血では、疲労感、息切れ、動悸、めまい、頭痛などの症状が現れることがあります。原因は鉄欠乏、ビタミンB12欠乏、葉酸欠乏、慢性疾患など様々です。',
+        'タミフル 75mg': 'オセルタミビル（タミフル）は、ノイラミニダーゼ阻害薬の一種で、インフルエンザウイルスの増殖を抑制します。発症後48時間以内の服用が効果的で、症状の持続期間を1-2日短縮し、合併症のリスクを軽減します。',
+        '鉄剤 100mg': '硫酸第一鉄（鉄剤）は、鉄欠乏性貧血の治療に使用される経口鉄剤です。ヘモグロビンの合成に必要な鉄分を補給し、貧血の改善を図ります。空腹時に服用すると吸収率が向上しますが、胃腸障害を起こすことがあるため、食後服用が推奨される場合があります。'
+    }
+    return explanations.get(text, text)
+
 # 登録されているルートを表示（デバッグ用）
 print("[STARTUP] 登録されているAPIルート:")
 for rule in app.url_map.iter_rules():

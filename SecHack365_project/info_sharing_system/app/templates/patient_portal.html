@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>患者ポータル - 医療情報共有システム</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='patient_portal.css') }}">
+</head>
+<body>
+    <div class="patient-portal-container">
+        <!-- ヘッダーセクション -->
+        <header class="patient-header">
+            <div class="patient-info">
+                <h1>患者ポータル</h1>
+                <div class="patient-identity">
+                    <h2>{{ patient_info.name }} 様</h2>
+                    <p class="patient-id">患者ID: {{ patient_info.id }}</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="language-selector">
+                    <label for="language">言語:</label>
+                    <select id="language" onchange="changeLanguage(this.value)">
+                        <option value="ja" selected>日本語</option>
+                        <option value="en">English</option>
+                        <option value="ko">한국어</option>
+                        <option value="zh">中文</option>
+                    </select>
+                </div>
+                <button onclick="location.reload()" class="refresh-btn">🔄 更新</button>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="patient-main">
+            <!-- 同意管理セクション -->
+            <section class="consent-section">
+                <h3>📋 情報共有の同意設定</h3>
+                <div class="consent-cards">
+                    <div class="consent-card">
+                        <h4>家族との情報共有</h4>
+                        <p class="consent-description">
+                            緊急時や治療方針の相談時に、家族と医療情報を共有することを許可しますか？
+                        </p>
+                        <div class="consent-controls">
+                            <label class="consent-toggle">
+                                <input type="checkbox" id="family-sharing" 
+                                       {{ 'checked' if consent_status.family_sharing else '' }}
+                                       onchange="updateConsent('family_sharing', this.checked)">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">許可する</span>
+                            </label>
+                        </div>
+                        <div class="consent-details" id="family-details" 
+                             style="display: {{ 'block' if consent_status.family_sharing else 'none' }}">
+                            <p><strong>共有される情報:</strong> 診断名、治療方針、緊急連絡先</p>
+                            <p><strong>共有先:</strong> 登録された家族・代理人</p>
+                        </div>
+                    </div>
+
+                    <div class="consent-card">
+                        <h4>緊急時の情報共有</h4>
+                        <p class="consent-description">
+                            意識不明や緊急事態の際に、医療従事者間で情報を共有することを許可しますか？
+                        </p>
+                        <div class="consent-controls">
+                            <label class="consent-toggle">
+                                <input type="checkbox" id="emergency-sharing" 
+                                       {{ 'checked' if consent_status.emergency_sharing else '' }}
+                                       onchange="updateConsent('emergency_sharing', this.checked)">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">許可する</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="consent-card">
+                        <h4>研究・教育目的での利用</h4>
+                        <p class="consent-description">
+                            個人を特定できない形で、医学研究や医療教育にデータを活用することを許可しますか？
+                        </p>
+                        <div class="consent-controls">
+                            <label class="consent-toggle">
+                                <input type="checkbox" id="research-sharing" 
+                                       {{ 'checked' if consent_status.research_sharing else '' }}
+                                       onchange="updateConsent('research_sharing', this.checked)">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">許可する</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 医療情報表示セクション -->
+            <section class="medical-info-section">
+                <h3>🏥 あなたの医療情報</h3>
+                <div class="info-controls">
+                    <div class="view-options">
+                        <label>
+                            <input type="radio" name="info-level" value="simple" checked onchange="changeInfoLevel('simple')">
+                            わかりやすい表示
+                        </label>
+                        <label>
+                            <input type="radio" name="info-level" value="detailed" onchange="changeInfoLevel('detailed')">
+                            詳細表示
+                        </label>
+                    </div>
+                </div>
+
+                <div class="medical-cards">
+                    {% for record in medical_records %}
+                    <div class="medical-card">
+                        <div class="card-header">
+                            <h4>{{ record.diagnosis }}</h4>
+                            <span class="record-date">{{ record.timestamp }}</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="info-item">
+                                <label>診断:</label>
+                                <span class="simple-text">{{ record.diagnosis_simple }}</span>
+                                <span class="detailed-text" style="display: none;">{{ record.diagnosis_detailed }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>治療薬:</label>
+                                <span>{{ record.medication }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>担当医師:</label>
+                                <span>{{ record.doctor }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>説明:</label>
+                                <div class="explanation">
+                                    <p class="simple-text">{{ record.explanation_simple }}</p>
+                                    <p class="detailed-text" style="display: none;">{{ record.explanation_detailed }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button onclick="askQuestion('{{ record.id }}')" class="question-btn">
+                                ❓ 質問する
+                            </button>
+                            <button onclick="downloadRecord('{{ record.id }}')" class="download-btn">
+                                📄 記録をダウンロード
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- 質問・相談セクション -->
+            <section class="questions-section">
+                <h3>💬 医師への質問・相談</h3>
+                <div class="question-form">
+                    <textarea id="question-text" placeholder="気になることや質問があれば、お気軽にお書きください..."></textarea>
+                    <div class="question-options">
+                        <label>
+                            <input type="checkbox" id="urgent-question">
+                            緊急を要する質問
+                        </label>
+                        <label>
+                            <input type="checkbox" id="family-notification">
+                            家族にも回答を共有する
+                        </label>
+                    </div>
+                    <button onclick="submitQuestion()" class="submit-question-btn">質問を送信</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- フッター -->
+        <footer class="patient-footer">
+            <p>このシステムはあなたの医療情報を安全に管理し、あなたの意思決定をサポートします。</p>
+            <p>質問やご不明な点がございましたら、お気軽にお問い合わせください。</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='patient_portal.js') }}"></script>
+</body>
+</html>
