@@ -1,0 +1,15 @@
+# 患者情報共有システム - 依存関係
+# メインのrequirements.txtは SecHack365_project/requirements.txt にあります
+
+# このファイルはルートディレクトリからの依存関係管理用です
+# 実際の依存関係は SecHack365_project/requirements.txt を参照してください
+
+# セットアップ用の基本依存関係
+-r SecHack365_project/requirements.txt
+
+# 開発用の追加依存関係（オプション）
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=22.0.0
+# flake8>=5.0.0
+# mypy>=1.0.0
