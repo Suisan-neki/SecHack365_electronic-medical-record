@@ -49,6 +49,27 @@ def log_request():
 # UserAuthenticatorの初期化
 authenticator = UserAuthenticator(os.path.join(app.root_path, "user_db.json"))
 
+# 患者データを読み込む関数
+def load_patient_data():
+    """患者データを読み込む"""
+    try:
+        # 暗号化された患者データファイルを読み込み
+        encrypted_file = os.path.join(app.root_path, "demo_karte_encrypted.json")
+        if os.path.exists(encrypted_file):
+            with open(encrypted_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        else:
+            # 暗号化ファイルがない場合は、元のデータファイルから読み込み
+            demo_file = os.path.join(app.root_path, "demo_karte.json")
+            if os.path.exists(demo_file):
+                with open(demo_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                return {}
+    except Exception as e:
+        print(f"患者データ読み込みエラー: {str(e)}")
+        return {}
+
 # AuditLoggerの初期化（プロジェクトルートにaudit.logを作成）
 audit_logger = AuditLogger(log_file=os.path.join(app.root_path, "..", "..", "audit.log"))
 

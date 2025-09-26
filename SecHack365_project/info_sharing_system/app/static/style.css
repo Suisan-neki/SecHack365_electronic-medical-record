@@ -598,12 +598,14 @@ ul {
     background: #667eea;
     color: white;
     padding: 12px 20px;
+    border: none;
     border-radius: 8px;
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
 }
 
 .patient-portal-btn:hover {
