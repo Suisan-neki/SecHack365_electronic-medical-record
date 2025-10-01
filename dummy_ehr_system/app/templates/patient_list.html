@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>患者一覧 - 模擬電子カルテ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .patient-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 500;
+        }
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .view-btn, .export-btn {
+            padding: 6px 12px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 13px;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .view-btn {
+            background: #667eea;
+            color: white;
+        }
+        .export-btn {
+            background: #48bb78;
+            color: white;
+        }
+        .view-btn:hover {
+            background: #5568d3;
+        }
+        .export-btn:hover {
+            background: #38a169;
+        }
+        .btn-disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👥 患者一覧</h1>
+            <a href="/" class="back-btn">← ダッシュボード</a>
+        </header>
+        
+        <div class="patient-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>患者ID</th>
+                        <th>氏名</th>
+                        <th>生年月日</th>
+                        <th>性別</th>
+                        <th>血液型</th>
+                        <th>アレルギー</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patient in patients %}
+                    <tr>
+                        <td><strong>{{ patient.patient_id }}</strong></td>
+                        <td>{{ patient.name }}</td>
+                        <td>{{ patient.birth_date }}</td>
+                        <td>{{ patient.gender }}</td>
+                        <td>{{ patient.blood_type }}</td>
+                        <td>{{ patient.allergies }}</td>
+                        <td>
+                            <a href="/patient/{{ patient.patient_id }}" class="view-btn" onclick="handleViewClick('{{ patient.patient_id }}')">詳細</a>
+                            <a href="/api/export/csv/{{ patient.patient_id }}" class="export-btn" download onclick="handleCsvExport('{{ patient.patient_id }}')">CSV</a>
+                            <a href="/api/export/fhir/{{ patient.patient_id }}" class="export-btn" target="_blank" onclick="handleFhirExport('{{ patient.patient_id }}')">FHIR</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function handleViewClick(patientId) {
+            console.log('患者詳細を表示:', patientId);
+            // 通常のリンク動作を許可
+            return true;
+        }
+
+        function handleCsvExport(patientId) {
+            console.log('CSVエクスポート開始:', patientId);
+            // エクスポート処理のローディング表示
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'エクスポート中...';
+            btn.classList.add('btn-disabled');
+            
+            // 通常のリンク動作を許可
+            return true;
+        }
+
+        function handleFhirExport(patientId) {
+            console.log('FHIRエクスポート開始:', patientId);
+            // エクスポート処理のローディング表示
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'エクスポート中...';
+            btn.classList.add('btn-disabled');
+            
+            // 通常のリンク動作を許可
+            return true;
+        }
+
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('患者一覧ページが読み込まれました');
+            
+            // ボタンの状態を確認
+            const buttons = document.querySelectorAll('.view-btn, .export-btn');
+            buttons.forEach(btn => {
+                console.log('ボタン発見:', btn.textContent, btn.href);
+            });
+        });
+    </script>
+</body>
+</html>
+

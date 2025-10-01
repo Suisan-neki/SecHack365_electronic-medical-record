@@ -5,3 +5,5 @@ qrcode[pil]
 Flask-Login
 webauthn
 passlib
+fhir.resources>=7.0.0
+pandas>=2.0.0
