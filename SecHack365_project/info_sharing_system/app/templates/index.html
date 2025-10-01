@@ -9,6 +9,134 @@
     <!-- スタイルシートの読み込み -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='accessibility.css') }}">
+    
+    <!-- 患者選択モーダルのスタイル -->
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+        }
+        
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close:hover {
+            opacity: 0.7;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            text-align: right;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .patient-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .patient-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .patient-item:hover {
+            background: #f0f8ff;
+            border-color: #667eea;
+        }
+        
+        .patient-info h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .patient-info p {
+            margin: 2px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .patient-actions {
+            margin-left: 15px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+    </style>
 </head>
 <body {% if current_user.is_authenticated %}data-user-role="{{ current_user.role }}"{% endif %}>
     <!-- ======================================== -->
@@ -126,12 +254,12 @@
                             <small>新しいシステムフローで医療情報を入力・患者に表示</small>
                         </span>
                     </a>
-                    <!-- 患者情報抽出ボタン: 電子カルテシステムから患者データを取得（従来機能） -->
-                    <button onclick="loadPatientData()" class="primary-action-button secondary" id="load-data-btn">
+                    <!-- 患者情報抽出ボタン: 模擬電子カルテから患者データを取得 -->
+                    <button onclick="showPatientSelectionModal()" class="primary-action-button secondary" id="load-data-btn">
                         <span class="button-icon">📤</span>
                         <span class="button-text">
                             <strong>患者情報を抽出</strong>
-                            <small>電子カルテシステムから現在の患者データを取得</small>
+                            <small>模擬電子カルテから患者データを選択・取得</small>
                         </span>
                     </button>
                     <!-- 患者用ビュー表示ボタン: PCで患者向け画面を確認 -->
@@ -253,9 +381,131 @@
     <script src="{{ url_for('static', filename='google_translate.js') }}"></script>
     
     <!-- ======================================== -->
+    <!-- 患者選択モーダル -->
+    <!-- ======================================== -->
+    <div id="patient-selection-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>👤 患者を選択してください</h3>
+                <span class="close" onclick="closePatientSelectionModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>模擬電子カルテから患者データを取得します。患者を選択して「データを取得」ボタンを押してください。</p>
+                <div id="patient-list" class="patient-list">
+                    <!-- 患者一覧がここに動的に追加されます -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closePatientSelectionModal()" class="btn btn-secondary">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================== -->
     <!-- インラインJavaScript: ユーティリティ機能 -->
     <!-- ======================================== -->
     <script>
+        /**
+         * 患者選択モーダルを表示
+         */
+        async function showPatientSelectionModal() {
+            console.log('🔄 患者選択モーダルを表示中...');
+            
+            const modal = document.getElementById('patient-selection-modal');
+            const patientList = document.getElementById('patient-list');
+            
+            // ローディング表示
+            patientList.innerHTML = '<div style="text-align: center; padding: 20px;">模擬電子カルテから患者データを取得中...</div>';
+            modal.style.display = 'block';
+            
+            try {
+                // 模擬電子カルテから患者一覧を取得
+                const response = await fetch('/api/dummy-ehr/patients');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const data = await response.json();
+                
+                if (data.success && data.patients) {
+                    // 患者一覧を表示
+                    patientList.innerHTML = data.patients.map(patient => `
+                        <div class="patient-item" onclick="selectPatient('${patient.patient_id}')">
+                            <div class="patient-info">
+                                <h4>${patient.name} (${patient.name_kana})</h4>
+                                <p>患者ID: ${patient.patient_id} | 生年月日: ${patient.birth_date} | 性別: ${patient.gender}</p>
+                                <p>血液型: ${patient.blood_type} | アレルギー: ${patient.allergies}</p>
+                            </div>
+                            <div class="patient-actions">
+                                <button class="btn btn-primary" onclick="event.stopPropagation(); selectPatient('${patient.patient_id}')">
+                                    データを取得
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    patientList.innerHTML = '<div style="text-align: center; padding: 20px; color: #e74c3c;">患者データを取得できませんでした</div>';
+                }
+            } catch (error) {
+                console.error('患者一覧取得エラー:', error);
+                patientList.innerHTML = '<div style="text-align: center; padding: 20px; color: #e74c3c;">エラー: ' + error.message + '</div>';
+            }
+        }
+        
+        /**
+         * 患者選択モーダルを閉じる
+         */
+        function closePatientSelectionModal() {
+            document.getElementById('patient-selection-modal').style.display = 'none';
+        }
+        
+        /**
+         * 患者を選択してデータを取得
+         */
+        async function selectPatient(patientId) {
+            console.log('🔄 患者データを取得中:', patientId);
+            
+            try {
+                // 模擬電子カルテから患者データを取得
+                const response = await fetch(`/api/dummy-ehr/patient/${patientId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const data = await response.json();
+                
+                if (data.success && data.patient) {
+                    // 患者データを表示エリアに設定
+                    const patient = data.patient;
+                    document.getElementById('doctor-patient-id').textContent = patient.patient_id || patientId;
+                    document.getElementById('doctor-patient-name').textContent = patient.name || '不明';
+                    document.getElementById('doctor-patient-age').textContent = patient.age ? patient.age + '歳' : '不明';
+                    document.getElementById('doctor-patient-gender').textContent = patient.gender || '不明';
+                    
+                    // 患者IDをセッションに保存
+                    sessionStorage.setItem('currentPatientId', patient.patient_id || patientId);
+                    
+                    // 成功メッセージ
+                    const patientStatus = document.querySelector('.patient-status');
+                    if (patientStatus) {
+                        patientStatus.textContent = `${patient.name}のデータを取得しました`;
+                        patientStatus.style.background = 'rgba(40, 167, 69, 0.3)';
+                    }
+                    
+                    // 依存ボタンを有効化
+                    enableDataDependentButtons();
+                    
+                    // モーダルを閉じる
+                    closePatientSelectionModal();
+                    
+                    console.log('✅ 患者データ取得成功:', patient);
+                } else {
+                    alert('患者データの取得に失敗しました: ' + (data.error || '不明なエラー'));
+                }
+            } catch (error) {
+                console.error('患者データ取得エラー:', error);
+                alert('患者データの取得中にエラーが発生しました: ' + error.message);
+            }
+        }
+
         /**
          * 現在時刻を更新する関数
          * ヘッダーの現在時刻表示を1秒ごとに更新

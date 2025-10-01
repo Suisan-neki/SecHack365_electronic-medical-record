@@ -48,9 +48,18 @@ class UserAuthenticator:
         self.users = self._load_users()
         
         # WebAuthn設定
-        self.rp_id = "localhost"  # Relying Party ID（本番環境では実際のドメイン）
+        self.rp_id = "localhost"  # Relying Party ID
         self.rp_name = "SecHack365 PHR System"
-        self.origin = "http://localhost:5001"  # HTTPの5001ポートに変更
+        # 複数のオリジンをサポート
+        self.allowed_origins = [
+            "http://localhost:5001",
+            "http://127.0.0.1:5001",
+            "https://localhost:5001",
+            "https://127.0.0.1:5001"
+        ]
+        # 複数のRP_IDをサポート
+        self.allowed_rp_ids = ["localhost", "127.0.0.1"]
+        self.origin = "http://localhost:5001"  # デフォルトオリジン
 
     def _load_users(self):
         """
@@ -619,13 +628,27 @@ class UserAuthenticator:
                 type=registration_response['type']
             )
             
-            # 登録レスポンスを検証
-            verification = verify_registration_response(
-                credential=credential,
-                expected_challenge=base64.urlsafe_b64decode(challenge),
-                expected_origin=self.origin,
-                expected_rp_id=self.rp_id
-            )
+            # 登録レスポンスを検証（複数のオリジンとRP_IDをサポート）
+            verification = None
+            for origin in self.allowed_origins:
+                for rp_id in self.allowed_rp_ids:
+                    try:
+                        verification = verify_registration_response(
+                            credential=credential,
+                            expected_challenge=base64.urlsafe_b64decode(challenge),
+                            expected_origin=origin,
+                            expected_rp_id=rp_id
+                        )
+                        print(f"[DEBUG] WebAuthn登録検証成功: {origin}, {rp_id}")
+                        break
+                    except Exception as e:
+                        print(f"[DEBUG] WebAuthn登録検証失敗 ({origin}, {rp_id}): {e}")
+                        continue
+                if verification:
+                    break
+            
+            if not verification:
+                return False, "WebAuthn登録の検証に失敗しました"
             
             # verification オブジェクトの属性を確認
             print(f"[DEBUG] verification object attributes: {dir(verification)}")
@@ -980,15 +1003,29 @@ class UserAuthenticator:
                 type=authentication_response['type']
             )
             
-            # 認証レスポンスを検証
-            verification = verify_authentication_response(
-                credential=credential,
-                expected_challenge=base64.urlsafe_b64decode(challenge),
-                expected_origin=self.origin,
-                expected_rp_id=self.rp_id,
-                credential_public_key=base64.urlsafe_b64decode(matching_credential['public_key']),
-                credential_current_sign_count=matching_credential['sign_count']
-            )
+            # 認証レスポンスを検証（複数のオリジンとRP_IDをサポート）
+            verification = None
+            for origin in self.allowed_origins:
+                for rp_id in self.allowed_rp_ids:
+                    try:
+                        verification = verify_authentication_response(
+                            credential=credential,
+                            expected_challenge=base64.urlsafe_b64decode(challenge),
+                            expected_origin=origin,
+                            expected_rp_id=rp_id,
+                            credential_public_key=base64.urlsafe_b64decode(matching_credential['public_key']),
+                            credential_current_sign_count=matching_credential['sign_count']
+                        )
+                        print(f"[DEBUG] WebAuthn認証検証成功: {origin}, {rp_id}")
+                        break
+                    except Exception as e:
+                        print(f"[DEBUG] WebAuthn認証検証失敗 ({origin}, {rp_id}): {e}")
+                        continue
+                if verification:
+                    break
+            
+            if not verification:
+                return False, "WebAuthn認証の検証に失敗しました"
             
             # verification オブジェクトの属性を確認
             print(f"[DEBUG] auth verification object attributes: {dir(verification)}")

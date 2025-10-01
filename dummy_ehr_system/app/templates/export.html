@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データ抽出 - 模擬電子カルテ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .export-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .export-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .patient-list {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .patient-item {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .patient-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .patient-info p {
+            color: #666;
+            font-size: 14px;
+        }
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .export-btn {
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .csv-btn {
+            background: #48bb78;
+            color: white;
+        }
+        .csv-btn:hover {
+            background: #38a169;
+        }
+        .fhir-btn {
+            background: #4299e1;
+            color: white;
+        }
+        .fhir-btn:hover {
+            background: #3182ce;
+        }
+        .api-info {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .api-info h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        .api-info code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📤 データ抽出 (Export)</h1>
+            <a href="/" class="back-btn">← ダッシュボード</a>
+        </header>
+        
+        <div class="export-section">
+            <h2>患者データの抽出</h2>
+            <p style="margin-bottom: 20px; color: #666;">
+                患者データをCSVまたはFHIR形式で抽出できます。抽出されたデータはメインシステムに送信できます。
+            </p>
+            
+            <div class="patient-list">
+                {% for patient in patients %}
+                <div class="patient-item">
+                    <div class="patient-info">
+                        <h3>{{ patient.name }} ({{ patient.name_kana }})</h3>
+                        <p>患者ID: {{ patient.patient_id }} | 生年月日: {{ patient.birth_date }} | 性別: {{ patient.gender }}</p>
+                    </div>
+                    <div class="export-buttons">
+                        <a href="/api/export/csv/{{ patient.patient_id }}" class="export-btn csv-btn" download>CSV</a>
+                        <a href="/api/export/fhir/{{ patient.patient_id }}" class="export-btn fhir-btn" target="_blank">FHIR</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="export-section">
+            <div class="api-info">
+                <h3>📡 API エンドポイント</h3>
+                <p><strong>CSV抽出:</strong> <code>GET /api/export/csv/&lt;patient_id&gt;</code></p>
+                <p><strong>FHIR抽出:</strong> <code>GET /api/export/fhir/&lt;patient_id&gt;</code></p>
+                <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                    ※ CSVファイルは自動的にダウンロードされます。<br>
+                    ※ FHIRデータは新しいタブでJSON形式で表示されます。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('データ抽出ページが読み込まれました');
+            
+            // エクスポートボタンのクリックイベント
+            const exportBtns = document.querySelectorAll('.export-btn');
+            exportBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const patientId = this.href.split('/').pop();
+                    const format = this.classList.contains('csv-btn') ? 'CSV' : 'FHIR';
+                    console.log(`${format}エクスポート開始:`, patientId);
+                    
+                    // ローディング表示
+                    const originalText = this.textContent;
+                    this.textContent = 'エクスポート中...';
+                    this.style.opacity = '0.7';
+                    
+                    // 3秒後に元に戻す（実際の処理が完了したと仮定）
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                        this.style.opacity = '1';
+                    }, 3000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

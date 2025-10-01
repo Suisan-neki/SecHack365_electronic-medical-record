@@ -2298,6 +2298,392 @@ def add_symptom_tag():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# =============================================================================
+# FHIR・CSV連携APIエンドポイント
+# =============================================================================
+
+@app.route('/api/import/fhir', methods=['POST'])
+@login_required
+def import_from_fhir():
+    """FHIR Bundle形式のデータをインポート"""
+    try:
+        # 医師権限チェック
+        if current_user.role not in ['doctor', 'admin']:
+            return jsonify({
+                'success': False,
+                'error': 'この機能を使用するには医師権限が必要です'
+            }), 403
+        
+        from core.fhir_adapter import FHIRAdapter
+        
+        data = request.get_json()
+        fhir_bundle = data.get('fhir_bundle')
+        
+        if not fhir_bundle:
+            return jsonify({
+                'success': False,
+                'error': 'FHIR Bundleデータが必要です'
+            }), 400
+        
+        adapter = FHIRAdapter()
+        medical_record = adapter.import_from_fhir_bundle(fhir_bundle)
+        
+        # 監査ログ記録
+        audit_logger.log_event(
+            event_id="FHIR_IMPORT",
+            user_id=current_user.id,
+            user_role=current_user.role,
+            ip_address=request.remote_addr,
+            action="IMPORT_FROM_FHIR",
+            resource="/api/import/fhir",
+            status="SUCCESS",
+            message="FHIRデータをインポートしました"
+        )
+        
+        return jsonify({
+            'success': True,
+            'medical_record': medical_record
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] FHIRインポートエラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'FHIRインポート中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/api/export/fhir/<session_id>', methods=['GET'])
+@login_required
+def export_to_fhir(session_id):
+    """医療記録をFHIR Bundle形式でエクスポート"""
+    try:
+        # 医師権限チェック
+        if current_user.role not in ['doctor', 'admin']:
+            return jsonify({
+                'success': False,
+                'error': 'この機能を使用するには医師権限が必要です'
+            }), 403
+        
+        from core.fhir_adapter import FHIRAdapter
+        
+        # セッションデータを取得
+        record = db_manager.get_medical_record(session_id)
+        if not record:
+            return jsonify({
+                'success': False,
+                'error': '指定されたセッションIDのデータが見つかりません'
+            }), 404
+        
+        adapter = FHIRAdapter()
+        patient_id = record.get('patient_id', 'unknown')
+        fhir_bundle = adapter.export_to_fhir_bundle(record, patient_id)
+        
+        # 監査ログ記録
+        audit_logger.log_event(
+            event_id="FHIR_EXPORT",
+            user_id=current_user.id,
+            user_role=current_user.role,
+            ip_address=request.remote_addr,
+            action="EXPORT_TO_FHIR",
+            resource=f"/api/export/fhir/{session_id}",
+            status="SUCCESS",
+            message="FHIRデータをエクスポートしました",
+            details={"session_id": session_id, "patient_id": patient_id}
+        )
+        
+        return jsonify({
+            'success': True,
+            'fhir_bundle': json.loads(fhir_bundle)
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] FHIRエクスポートエラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'FHIRエクスポート中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/api/import/csv', methods=['POST'])
+@login_required
+def import_from_csv():
+    """CSV形式のデータをインポート"""
+    try:
+        # 医師権限チェック
+        if current_user.role not in ['doctor', 'admin']:
+            return jsonify({
+                'success': False,
+                'error': 'この機能を使用するには医師権限が必要です'
+            }), 403
+        
+        from core.csv_handler import CSVHandler
+        
+        # ファイルまたはテキストデータを受け取る
+        if 'file' in request.files:
+            file = request.files['file']
+            csv_content = file.read().decode('utf-8')
+        elif request.is_json:
+            data = request.get_json()
+            csv_content = data.get('csv_content')
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'CSVファイルまたはCSVコンテンツが必要です'
+            }), 400
+        
+        if not csv_content:
+            return jsonify({
+                'success': False,
+                'error': 'CSVデータが空です'
+            }), 400
+        
+        handler = CSVHandler()
+        
+        # CSVを検証
+        validation = handler.validate_csv(csv_content)
+        if not validation['valid']:
+            return jsonify({
+                'success': False,
+                'error': 'CSVの形式が不正です',
+                'validation': validation
+            }), 400
+        
+        # CSVをインポート
+        medical_records = handler.import_from_csv(csv_content)
+        
+        # 監査ログ記録
+        audit_logger.log_event(
+            event_id="CSV_IMPORT",
+            user_id=current_user.id,
+            user_role=current_user.role,
+            ip_address=request.remote_addr,
+            action="IMPORT_FROM_CSV",
+            resource="/api/import/csv",
+            status="SUCCESS",
+            message=f"CSVデータ{len(medical_records)}件をインポートしました",
+            details={"record_count": len(medical_records)}
+        )
+        
+        return jsonify({
+            'success': True,
+            'medical_records': medical_records,
+            'validation': validation,
+            'count': len(medical_records)
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] CSVインポートエラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'CSVインポート中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/api/export/csv', methods=['POST'])
+@login_required
+def export_to_csv():
+    """医療記録をCSV形式でエクスポート"""
+    try:
+        # 医師権限チェック
+        if current_user.role not in ['doctor', 'admin']:
+            return jsonify({
+                'success': False,
+                'error': 'この機能を使用するには医師権限が必要です'
+            }), 403
+        
+        from core.csv_handler import CSVHandler
+        from flask import Response
+        
+        data = request.get_json()
+        session_ids = data.get('session_ids', [])
+        
+        if not session_ids:
+            return jsonify({
+                'success': False,
+                'error': 'エクスポートするセッションIDが指定されていません'
+            }), 400
+        
+        # 各セッションの医療記録を取得
+        medical_records = []
+        for session_id in session_ids:
+            record = db_manager.get_medical_record(session_id)
+            if record:
+                medical_records.append(record)
+        
+        if not medical_records:
+            return jsonify({
+                'success': False,
+                'error': '指定されたセッションIDのデータが見つかりません'
+            }), 404
+        
+        handler = CSVHandler()
+        csv_content = handler.export_to_csv(medical_records)
+        
+        # 監査ログ記録
+        audit_logger.log_event(
+            event_id="CSV_EXPORT",
+            user_id=current_user.id,
+            user_role=current_user.role,
+            ip_address=request.remote_addr,
+            action="EXPORT_TO_CSV",
+            resource="/api/export/csv",
+            status="SUCCESS",
+            message=f"CSVデータ{len(medical_records)}件をエクスポートしました",
+            details={"record_count": len(medical_records)}
+        )
+        
+        # CSVファイルとしてダウンロード
+        return Response(
+            csv_content,
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename=medical_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            }
+        )
+        
+    except Exception as e:
+        print(f"[ERROR] CSVエクスポートエラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'CSVエクスポート中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/api/template/csv', methods=['GET'])
+@login_required
+def get_csv_template():
+    """CSVテンプレートファイルをダウンロード"""
+    try:
+        from core.csv_handler import CSVHandler
+        from flask import Response
+        
+        handler = CSVHandler()
+        csv_template = handler.create_template_csv()
+        
+        return Response(
+            csv_template,
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': 'attachment; filename=medical_records_template.csv'
+            }
+        )
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'CSVテンプレート生成中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/api/sample/fhir', methods=['GET'])
+@login_required
+def get_fhir_sample():
+    """サンプルFHIR Bundleを取得"""
+    try:
+        from core.fhir_adapter import create_sample_fhir_bundle
+        
+        sample_bundle = create_sample_fhir_bundle()
+        
+        return jsonify({
+            'success': True,
+            'fhir_bundle': json.loads(sample_bundle)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'サンプルFHIR Bundle生成中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/api/dummy-ehr/patients', methods=['GET'])
+@login_required
+def get_dummy_ehr_patients():
+    """模擬電子カルテから患者一覧を取得"""
+    try:
+        if current_user.role not in ['doctor', 'admin']:
+            return jsonify({'success': False, 'error': 'この機能を使用するには医師権限が必要です'}), 403
+        
+        import requests
+        response = requests.get('http://127.0.0.1:5002/api/patients', timeout=5)
+        if response.status_code == 200:
+            patients = response.json()
+            audit_logger.log_event(event_id="DUMMY_EHR_PATIENTS", user_id=current_user.id, user_role=current_user.role, ip_address=request.remote_addr, action="GET_DUMMY_EHR_PATIENTS", resource="/api/dummy-ehr/patients", status="SUCCESS", message="模擬電子カルテから患者一覧を取得しました")
+            return jsonify({'success': True, 'patients': patients})
+        else:
+            return jsonify({'success': False, 'error': '模擬電子カルテから患者データを取得できませんでした'}), 500
+    except Exception as e:
+        print(f"[ERROR] 模擬電子カルテ患者一覧取得エラー: {e}")
+        return jsonify({'success': False, 'error': f'模擬電子カルテから患者データを取得できませんでした: {str(e)}'}), 500
+
+@app.route('/api/dummy-ehr/patient/<patient_id>', methods=['GET'])
+@login_required
+def get_dummy_ehr_patient(patient_id):
+    """模擬電子カルテから特定の患者データを取得"""
+    try:
+        if current_user.role not in ['doctor', 'admin']:
+            return jsonify({'success': False, 'error': 'この機能を使用するには医師権限が必要です'}), 403
+        
+        import requests
+        response = requests.get(f'http://127.0.0.1:5002/api/patient/{patient_id}', timeout=5)
+        if response.status_code == 200:
+            patient_data = response.json()
+            audit_logger.log_event(event_id="DUMMY_EHR_PATIENT", user_id=current_user.id, user_role=current_user.role, ip_address=request.remote_addr, action="GET_DUMMY_EHR_PATIENT", resource=f"/api/dummy-ehr/patient/{patient_id}", status="SUCCESS", message=f"模擬電子カルテから患者{patient_id}のデータを取得しました")
+            return jsonify({'success': True, 'patient': patient_data})
+        else:
+            return jsonify({'success': False, 'error': f'患者{patient_id}のデータを取得できませんでした'}), 500
+    except Exception as e:
+        print(f"[ERROR] 模擬電子カルテ患者データ取得エラー: {e}")
+        return jsonify({'success': False, 'error': f'患者データを取得できませんでした: {str(e)}'}), 500
+
+@app.route('/api/dummy-ehr/record', methods=['POST'])
+@login_required
+def send_record_to_dummy_ehr():
+    """診療記録を模擬電子カルテに送信"""
+    try:
+        if current_user.role not in ['doctor', 'admin']:
+            return jsonify({'success': False, 'error': 'この機能を使用するには医師権限が必要です'}), 403
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'データが提供されていません'}), 400
+        
+        # 診療記録データを準備
+        record_data = {
+            'patient_id': data.get('patient_id'),
+            'date': data.get('date'),
+            'doctor': data.get('doctor', current_user.id),
+            'department': data.get('department', '内科'),
+            'chief_complaint': data.get('chief_complaint', ''),
+            'diagnosis': data.get('diagnosis', ''),
+            'treatment': data.get('treatment', ''),
+            'notes': data.get('notes', ''),
+            'status': '完了'
+        }
+        
+        import requests
+        response = requests.post('http://127.0.0.1:5002/api/import/record', 
+                               json=record_data, 
+                               headers={'Content-Type': 'application/json'}, 
+                               timeout=10)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('success'):
+                audit_logger.log_event(event_id="DUMMY_EHR_RECORD", user_id=current_user.id, user_role=current_user.role, ip_address=request.remote_addr, action="SEND_RECORD_TO_DUMMY_EHR", resource="/api/dummy-ehr/record", status="SUCCESS", message=f"患者{record_data['patient_id']}の診療記録を模擬電子カルテに送信しました")
+                return jsonify({'success': True, 'message': '診療記録を模擬電子カルテに送信しました'})
+            else:
+                return jsonify({'success': False, 'error': result.get('error', '模擬電子カルテへの送信に失敗しました')}), 500
+        else:
+            return jsonify({'success': False, 'error': f'模擬電子カルテへの送信に失敗しました (HTTP {response.status_code})'}), 500
+            
+    except Exception as e:
+        print(f"[ERROR] 模擬電子カルテ診療記録送信エラー: {e}")
+        return jsonify({'success': False, 'error': f'診療記録の送信中にエラーが発生しました: {str(e)}'}), 500
+
 # 登録されているルートを表示（デバッグ用）
 print("[STARTUP] 登録されているAPIルート:")
 for rule in app.url_map.iter_rules():

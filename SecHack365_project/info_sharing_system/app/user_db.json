@@ -25,7 +25,9 @@
                 "created_at": "{\"timestamp\": \"auto-generated\"}"
             }
         ],
-        "webauthn_challenges": {}
+        "webauthn_challenges": {
+            "authentication": "ZvsraJOdGfrakOwOf79nVb2CzR+INOdD+60PaQXOqAo40vnW4n8Ny21hegQTZGBDB+6Ro670C24tGbvT+KNDMA=="
+        }
     },
     "nurse1": {
         "password": "$pbkdf2-sha256$29000$EYIQQuj9v9ca43wvpTQGgA$MErEk9YKn.HW.feKCLrzgpvyYUP10WYI/NUNBOy/uH8",
