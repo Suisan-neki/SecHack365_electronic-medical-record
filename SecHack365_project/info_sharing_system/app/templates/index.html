@@ -58,7 +58,7 @@
         </div>
         
         <!-- メインタイトル -->
-        <h1>🩺 医師向けプライベートビュー</h1>
+        <h1>🩺 医師向けプライベートビュー - 新しいシステムフロー</h1>
         
         <!-- ======================================== -->
         <!-- デバッグ情報セクション -->
@@ -93,12 +93,12 @@
             <div class="patient-card priority-high">
                 <div class="card-header">
                     <h2>🏥 現在の診察患者</h2>
-                    <div class="patient-status">電子カルテから抽出待機中</div>
+                    <div class="patient-status">新しいシステムフローで医療記録を入力してください</div>
                 </div>
                 <div class="patient-details">
                     <div class="patient-detail-item">
                         <span class="detail-label">患者名</span>
-                        <span class="detail-value" id="doctor-patient-name">電子カルテから情報を抽出してください</span>
+                        <span class="detail-value" id="doctor-patient-name">「医療記録を入力」ボタンから新しいシステムフローを開始</span>
                     </div>
                     <div class="patient-detail-item">
                         <span class="detail-label">年齢・性別</span>
@@ -118,20 +118,20 @@
             <!-- ======================================== -->
             <div class="action-buttons priority-high">
                 <div class="button-row">
-                    <!-- 患者情報抽出ボタン: 電子カルテシステムから患者データを取得 -->
-                    <button onclick="loadPatientData()" class="primary-action-button" id="load-data-btn">
+                    <!-- 医療記録入力ボタン: 新しいシステムフローで医療情報を入力 -->
+                    <a href="{{ url_for('input_form') }}" class="primary-action-button" id="input-form-btn">
+                        <span class="button-icon">📝</span>
+                        <span class="button-text">
+                            <strong>医療記録を入力</strong>
+                            <small>新しいシステムフローで医療情報を入力・患者に表示</small>
+                        </span>
+                    </a>
+                    <!-- 患者情報抽出ボタン: 電子カルテシステムから患者データを取得（従来機能） -->
+                    <button onclick="loadPatientData()" class="primary-action-button secondary" id="load-data-btn">
                         <span class="button-icon">📤</span>
                         <span class="button-text">
                             <strong>患者情報を抽出</strong>
                             <small>電子カルテシステムから現在の患者データを取得</small>
-                        </span>
-                    </button>
-                    <!-- 生データ確認ボタン: 元システムの生データを表示（現在無効化） -->
-                    <button onclick="showRawEHRData()" class="primary-action-button disabled" id="raw-data-btn" disabled>
-                        <span class="button-icon">🗃️</span>
-                        <span class="button-text">
-                            <strong>生データ確認</strong>
-                            <small>元システムの生データを確認</small>
                         </span>
                     </button>
                     <!-- 患者用ビュー表示ボタン: PCで患者向け画面を確認 -->
@@ -173,82 +173,39 @@
                 <button onclick="toggleSecurityVerification()" class="security-button">🔒 セキュリティ検証を実行</button>
             </div>
             
-            <!-- 患者ポータルへのリンク -->
-            <div class="patient-portal-link priority-medium">
-                <h5>👤 患者ポータル</h5>
-                <p>患者様向けの情報閲覧・同意管理・質問機能</p>
-                <button onclick="openPatientPortal()" class="patient-portal-btn">患者ポータルを開く</button>
+        </div>
+    </div>
+    
+    <!-- 同意取得ポップアップ -->
+    <div id="consentModal" class="consent-modal" style="display: none;">
+        <div class="consent-modal-content">
+            <h2>🔒 医療情報の取り扱いについて</h2>
+            <p>このシステムでは、あなたの医療情報を安全に管理し、必要に応じて医療従事者と共有します。</p>
+            
+            <div class="consent-options">
+                <h3>情報共有の同意</h3>
+                <label style="display: flex; align-items: center; margin: 10px 0;">
+                    <input type="checkbox" id="consent-family" style="margin-right: 10px;">
+                    <span>家族との情報共有を許可する</span>
+                </label>
+                <label style="display: flex; align-items: center; margin: 10px 0;">
+                    <input type="checkbox" id="consent-emergency" checked style="margin-right: 10px;">
+                    <span>緊急時の情報共有を許可する</span>
+                </label>
+                <label style="display: flex; align-items: center; margin: 10px 0;">
+                    <input type="checkbox" id="consent-research" style="margin-right: 10px;">
+                    <span>研究目的での情報利用を許可する</span>
+                </label>
+            </div>
+            
+            <div class="consent-buttons">
+                <button onclick="acceptConsent()" class="consent-accept-btn">同意して続行</button>
+                <button onclick="declineConsent()" class="consent-decline-btn">同意しない</button>
             </div>
         </div>
     </div>
-    <!-- ======================================== -->
-    <!-- 患者向けメニュー画面（非表示状態） -->
-    <!-- ======================================== -->
-    <div id="patient-view" style="display:none;" class="fade-in patient-display-7inch">
-        <!-- 患者情報ヘッダー -->
-        <div class="patient-header">
-            <h1>診療情報</h1>
-            <h2 id="patient-name"></h2>
-        </div>
-        
-        <div class="medical-menu">
-            <div class="menu-item" onclick="showMedicalDetail('conditions')">
-                <h3>現在の病気・症状</h3>
-                <p>診断された病気や症状を確認</p>
-            </div>
-            
-            <div class="menu-item" onclick="showMedicalDetail('medications')">
-                <h3>処方薬</h3>
-                <p>現在処方されている薬の情報</p>
-            </div>
-            
-            <div class="menu-item" onclick="showMedicalDetail('tests')">
-                <h3>検査結果</h3>
-                <p>最新の検査データと数値</p>
-            </div>
-            
-            <div class="menu-item" id="raspi-display-btn" onclick="sendToRaspberryPi()" style="background: #e67e22; color: white;">
-                <h3>🍓 ラズパイに表示</h3>
-                <p>ラズパイのモニターに患者情報を表示</p>
-            </div>
-        </div>
-        
-        <div class="security-footer">
-            <p>この情報は暗号化により保護されています</p>
-        </div>
-        
-        <button onclick="switchView('private')" class="back-button">画面に戻る</button>
-    </div>
+    
 
-    <!-- 個別詳細画面 -->
-    <div id="medical-detail-view" style="display:none;" class="fade-in patient-display-7inch">
-        <div class="detail-header">
-            <button onclick="backToMenu()" class="back-to-menu-btn">← メニューに戻る</button>
-            <h1 id="detail-title"></h1>
-            <h2 id="detail-patient-name"></h2>
-        </div>
-        
-        <div class="detail-content">
-            <!-- 病気・症状 -->
-            <div id="conditions-detail" class="detail-section" style="display:none;">
-                <div id="conditions-list"></div>
-            </div>
-            
-            <!-- 処方薬 -->
-            <div id="medications-detail" class="detail-section" style="display:none;">
-                <ul id="medications"></ul>
-            </div>
-            
-            <!-- 検査結果 -->
-            <div id="tests-detail" class="detail-section" style="display:none;">
-                <div id="test-results"></div>
-            </div>
-        </div>
-        
-        <div class="security-footer">
-            <p>この情報は暗号化により保護されています</p>
-        </div>
-    </div>
 
     <!-- セキュリティ検証セクション -->
     <div id="security-verification-section" class="security-verification-container" style="display: none;">

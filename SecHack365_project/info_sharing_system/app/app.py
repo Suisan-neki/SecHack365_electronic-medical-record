@@ -1268,28 +1268,36 @@ current_display_patient_id = None
 # ラズパイ患者ビュー専用API
 @app.route('/api/patient-display')
 def get_patient_display():
-    """ラズパイ用患者ビュー専用API（認証不要）"""
+    """患者用ビュー専用API（認証不要）"""
     try:
-        # グローバル変数から患者IDを取得（PCから設定される）
-        global current_display_patient_id
-        patient_id = current_display_patient_id
-        if not patient_id:
-            return jsonify({"error": "No patient selected for display"}), 400
+        # デフォルトの患者IDを使用（P001）
+        patient_id = "P001"
         
         # 患者データの取得（デモデータを直接返す）
         try:
             # デモ患者データを直接返す
             if patient_id == "P001":
                 response_data = {
-                    "patient_info": {
-                        "name": "山下真凜",
-                        "birth_date": "2002-05-15",
-                        "age": 22,
-                        "gender": "女性"
-                    },
-                    "current_conditions": "インフルエンザ",
-                    "medications": "タミフル 75mg",
-                    "test_results": "体温: 38.2°C、血圧: 118/75 mmHg"
+                    "patient_name": "山下真凜",
+                    "age": 22,
+                    "gender": "女性",
+                    "blood_type": "A型",
+                    "allergies": ["なし"],
+                    "records": [
+                        {
+                            "timestamp": "2024-01-15T10:30:00Z",
+                            "data": {
+                                "diagnosis": "インフルエンザ",
+                                "medication": "タミフル 75mg",
+                                "notes": "安静を保ち、水分補給を心がける。解熱後も2日間は外出を控える。",
+                                "doctor": "Dr. 田中",
+                                "blood_pressure": "118/75",
+                                "temperature": "38.2°C"
+                            }
+                        }
+                    ],
+                    "lab_results": [],
+                    "treatment_plans": []
                 }
             else:
                 return jsonify({"error": "Patient data not found"}), 404
@@ -1741,54 +1749,7 @@ def webauthn_management():
     """WebAuthn認証器管理ページを表示"""
     return render_template('webauthn_management.html')
 
-# ========================================
-# 患者ポータル関連のルート
-# ========================================
 
-@app.route('/patient/<patient_id>')
-def patient_portal(patient_id):
-    """患者ポータルページを表示"""
-    try:
-        # 患者情報を取得
-        patient_data = load_patient_data()
-        if patient_id not in patient_data:
-            flash('患者情報が見つかりません', 'error')
-            return redirect(url_for('index'))
-        
-        patient_info = patient_data[patient_id]['patient_info']
-        
-        # 同意状況を取得（デフォルト値）
-        consent_status = {
-            'family_sharing': True,
-            'emergency_sharing': True,
-            'research_sharing': False
-        }
-        
-        # 医療記録を取得し、説明を構造化
-        medical_records = []
-        for record in patient_data[patient_id]['medical_records']:
-            structured_record = {
-                'id': f"record_{len(medical_records) + 1}",
-                'timestamp': record['timestamp'],
-                'diagnosis': record['data']['diagnosis'],
-                'diagnosis_simple': get_simple_explanation(record['data']['diagnosis']),
-                'diagnosis_detailed': get_detailed_explanation(record['data']['diagnosis']),
-                'medication': record['data']['medication'],
-                'doctor': record['data']['doctor'],
-                'explanation_simple': get_simple_explanation(record['data']['notes']),
-                'explanation_detailed': get_detailed_explanation(record['data']['notes'])
-            }
-            medical_records.append(structured_record)
-        
-        return render_template('patient_portal.html',
-                             patient_info=patient_info,
-                             consent_status=consent_status,
-                             medical_records=medical_records)
-    
-    except Exception as e:
-        print(f"患者ポータルエラー: {str(e)}")
-        flash('患者ポータルの読み込みに失敗しました', 'error')
-        return redirect(url_for('index'))
 
 @app.route('/api/patient/consent', methods=['POST'])
 def update_patient_consent():
@@ -1887,6 +1848,455 @@ def get_detailed_explanation(text):
         '鉄剤 100mg': '硫酸第一鉄（鉄剤）は、鉄欠乏性貧血の治療に使用される経口鉄剤です。ヘモグロビンの合成に必要な鉄分を補給し、貧血の改善を図ります。空腹時に服用すると吸収率が向上しますが、胃腸障害を起こすことがあるため、食後服用が推奨される場合があります。'
     }
     return explanations.get(text, text)
+
+# 新しいシステムフロー用のエンドポイント
+# データベースとEHR連携モジュールをインポート
+from core.database import db_manager
+from core.ehr_integrator import ehr_integrator
+
+@app.route('/input_form')
+@login_required
+def input_form():
+    """医師向け入力フォームページを表示"""
+    # 医師権限チェック
+    if current_user.role not in ['doctor', 'admin']:
+        flash('この機能を使用するには医師権限が必要です')
+        return redirect(url_for('index'))
+    
+    return render_template('input_form.html', username=current_user.id)
+
+@app.route('/api/input_medical_record', methods=['POST'])
+@login_required
+def input_medical_record():
+    """医療情報の入力処理"""
+    try:
+        # 医師権限チェック
+        if current_user.role not in ['doctor', 'admin']:
+            return jsonify({
+                'success': False,
+                'error': 'この機能を使用するには医師権限が必要です'
+            }), 403
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'データが提供されていません'
+            }), 400
+        
+        # 必須フィールドの検証
+        required_fields = ['diagnosis', 'medication', 'treatment_plan', 'patient_explanation']
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        
+        if missing_fields:
+            return jsonify({
+                'success': False,
+                'error': f'必須フィールドが不足しています: {", ".join(missing_fields)}'
+            }), 400
+        
+        # デモ用の患者ID（実際の実装では適切に取得）
+        patient_id = "P001"  # デモ用
+        
+        # 医療記録を作成
+        session_id = db_manager.create_medical_record(
+            patient_id=patient_id,
+            doctor_id=current_user.id,
+            diagnosis=data.get('diagnosis'),
+            diagnosis_details=data.get('diagnosis_details'),
+            medication=data.get('medication'),
+            medication_instructions=data.get('medication_instructions'),
+            treatment_plan=data.get('treatment_plan'),
+            follow_up=data.get('follow_up'),
+            patient_explanation=data.get('patient_explanation'),
+            risk_benefit_explanation=data.get('risk_benefit_explanation'),
+            doctor_notes=data.get('doctor_notes')
+        )
+        
+        if session_id:
+            # 監査ログ記録
+            audit_logger.log_event(
+                event_id="MEDICAL_RECORD_CREATED",
+                user_id=current_user.id,
+                user_role=current_user.role,
+                ip_address=request.remote_addr,
+                action="CREATE_MEDICAL_RECORD",
+                resource=f"/api/input_medical_record",
+                status="SUCCESS",
+                message="医療記録を作成しました",
+                details={
+                    "session_id": session_id,
+                    "patient_id": patient_id,
+                    "diagnosis": data.get('diagnosis')
+                }
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': '医療記録が正常に保存されました',
+                'session_id': session_id
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '医療記録の保存に失敗しました'
+            }), 500
+            
+    except Exception as e:
+        print(f"[ERROR] 医療記録入力エラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'サーバーエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/patient_view/<session_id>')
+def patient_view(session_id):
+    """患者向け表示ページ"""
+    try:
+        # 医療記録の存在確認
+        medical_record = db_manager.get_medical_record(session_id)
+        if not medical_record:
+            flash('指定された医療記録が見つかりません')
+            return redirect(url_for('index'))
+        
+        return render_template('patient_view.html', session_id=session_id)
+        
+    except Exception as e:
+        print(f"[ERROR] 患者ビューページエラー: {e}")
+        flash('ページの読み込み中にエラーが発生しました')
+        return redirect(url_for('index'))
+
+@app.route('/api/get_medical_record/<session_id>', methods=['GET'])
+def get_medical_record(session_id):
+    """医療記録の取得API"""
+    try:
+        medical_record = db_manager.get_medical_record(session_id)
+        if not medical_record:
+            return jsonify({
+                'error': '医療記録が見つかりません'
+            }), 404
+        
+        # 患者同意情報を取得
+        consent_info = db_manager.get_patient_consent(session_id)
+        
+        response_data = {
+            'session_id': session_id,
+            'diagnosis': medical_record.get('diagnosis'),
+            'diagnosis_details': medical_record.get('diagnosis_details'),
+            'medication': medical_record.get('medication'),
+            'medication_instructions': medical_record.get('medication_instructions'),
+            'treatment_plan': medical_record.get('treatment_plan'),
+            'follow_up': medical_record.get('follow_up'),
+            'patient_explanation': medical_record.get('patient_explanation'),
+            'risk_benefit_explanation': medical_record.get('risk_benefit_explanation'),
+            'status': medical_record.get('status'),
+            'created_at': medical_record.get('created_at'),
+            'consent_status': consent_info.get('consent_status') if consent_info else 'pending'
+        }
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"[ERROR] 医療記録取得エラー: {e}")
+        return jsonify({
+            'error': f'医療記録の取得に失敗しました: {str(e)}'
+        }), 500
+
+@app.route('/api/patient_consent/<session_id>', methods=['POST'])
+def patient_consent(session_id):
+    """患者同意の記録"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'データが提供されていません'
+            }), 400
+        
+        consent_status = data.get('consent_status')
+        if consent_status not in ['consented', 'declined', 'pending']:
+            return jsonify({
+                'success': False,
+                'error': '無効な同意状況です'
+            }), 400
+        
+        # 医療記録の存在確認
+        medical_record = db_manager.get_medical_record(session_id)
+        if not medical_record:
+            return jsonify({
+                'success': False,
+                'error': '医療記録が見つかりません'
+            }), 404
+        
+        # 患者同意を記録
+        success = db_manager.record_patient_consent(
+            session_id=session_id,
+            patient_id=medical_record.get('patient_id'),
+            consent_status=consent_status,
+            patient_questions=data.get('patient_questions'),
+            consent_details=data.get('consent_details')
+        )
+        
+        if success:
+            # 医療記録のステータスを更新
+            if consent_status == 'consented':
+                db_manager.update_medical_record(session_id, status='consented')
+            elif consent_status == 'declined':
+                db_manager.update_medical_record(session_id, status='declined')
+            
+            # 監査ログ記録
+            audit_logger.log_event(
+                event_id="PATIENT_CONSENT_RECORDED",
+                user_id="patient",
+                user_role="patient",
+                ip_address=request.remote_addr,
+                action="RECORD_CONSENT",
+                resource=f"/api/patient_consent/{session_id}",
+                status="SUCCESS",
+                message="患者同意を記録しました",
+                details={
+                    "session_id": session_id,
+                    "consent_status": consent_status
+                }
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': '同意が記録されました'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '同意の記録に失敗しました'
+            }), 500
+            
+    except Exception as e:
+        print(f"[ERROR] 患者同意記録エラー: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'同意の記録中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/api/patient_question/<session_id>', methods=['POST'])
+def patient_question(session_id):
+    """患者からの質問記録"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'データが提供されていません'
+            }), 400
+        
+        question_text = data.get('question_text')
+        if not question_text or not question_text.strip():
+            return jsonify({
+                'success': False,
+                'error': '質問内容を入力してください'
+            }), 400
+        
+        # 医療記録の存在確認
+        medical_record = db_manager.get_medical_record(session_id)
+        if not medical_record:
+            return jsonify({
+                'success': False,
+                'error': '医療記録が見つかりません'
+            }), 404
+        
+        # 患者質問を記録
+        success = db_manager.record_patient_question(
+            session_id=session_id,
+            patient_id=medical_record.get('patient_id'),
+            question_text=question_text.strip(),
+            is_urgent=data.get('is_urgent', False),
+            share_with_family=data.get('share_with_family', False)
+        )
+        
+        if success:
+            # 監査ログ記録
+            audit_logger.log_event(
+                event_id="PATIENT_QUESTION_RECORDED",
+                user_id="patient",
+                user_role="patient",
+                ip_address=request.remote_addr,
+                action="SUBMIT_QUESTION",
+                resource=f"/api/patient_question/{session_id}",
+                status="SUCCESS",
+                message="患者質問を記録しました",
+                details={
+                    "session_id": session_id,
+                    "question_length": len(question_text),
+                    "is_urgent": data.get('is_urgent', False)
+                }
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': '質問が送信されました'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '質問の送信に失敗しました'
+            }), 500
+            
+    except Exception as e:
+        print(f"[ERROR] 患者質問記録エラー: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'質問の送信中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/api/transfer_to_ehr/<session_id>', methods=['POST'])
+@login_required
+def transfer_to_ehr(session_id):
+    """電子カルテシステムへの転送"""
+    try:
+        # 医師権限チェック
+        if current_user.role not in ['doctor', 'admin']:
+            return jsonify({
+                'success': False,
+                'error': 'この機能を使用するには医師権限が必要です'
+            }), 403
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'データが提供されていません'
+            }), 400
+        
+        ehr_system_id = data.get('ehr_system_id', 'generic_fhir')
+        
+        # 医療記録の存在確認
+        medical_record = db_manager.get_medical_record(session_id)
+        if not medical_record:
+            return jsonify({
+                'success': False,
+                'error': '医療記録が見つかりません'
+            }), 404
+        
+        # 患者同意の確認
+        consent_info = db_manager.get_patient_consent(session_id)
+        if not consent_info or consent_info.get('consent_status') != 'consented':
+            return jsonify({
+                'success': False,
+                'error': '患者の同意が必要です'
+            }), 400
+        
+        # 電子カルテシステムに転送
+        transfer_result = ehr_integrator.transfer_to_ehr_system(
+            medical_data=medical_record,
+            ehr_system_id=ehr_system_id,
+            dry_run=False  # 実際の転送を実行
+        )
+        
+        # 転送ログを記録
+        db_manager.record_ehr_transfer(
+            session_id=session_id,
+            ehr_system_id=ehr_system_id,
+            transfer_status='success' if transfer_result.get('success') else 'failed',
+            error_message=transfer_result.get('error'),
+            transfer_data=json.dumps(transfer_result)
+        )
+        
+        # 監査ログ記録
+        audit_logger.log_event(
+            event_id="EHR_TRANSFER_ATTEMPTED",
+            user_id=current_user.id,
+            user_role=current_user.role,
+            ip_address=request.remote_addr,
+            action="TRANSFER_TO_EHR",
+            resource=f"/api/transfer_to_ehr/{session_id}",
+            status="SUCCESS" if transfer_result.get('success') else "FAILURE",
+            message="電子カルテシステムへの転送を実行しました",
+            details={
+                "session_id": session_id,
+                "ehr_system_id": ehr_system_id,
+                "transfer_success": transfer_result.get('success')
+            }
+        )
+        
+        return jsonify(transfer_result)
+        
+    except Exception as e:
+        print(f"[ERROR] 電子カルテ転送エラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'電子カルテ転送中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/api/ehr_systems', methods=['GET'])
+@login_required
+def get_ehr_systems():
+    """サポートされている電子カルテシステム一覧を取得"""
+    try:
+        systems = ehr_integrator.get_supported_systems()
+        return jsonify({
+            'success': True,
+            'systems': systems
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'システム一覧の取得に失敗しました: {str(e)}'
+        }), 500
+
+@app.route('/api/test_ehr_connection/<ehr_system_id>', methods=['POST'])
+@login_required
+def test_ehr_connection(ehr_system_id):
+    """電子カルテシステムとの接続テスト"""
+    try:
+        # 医師権限チェック
+        if current_user.role not in ['doctor', 'admin']:
+            return jsonify({
+                'success': False,
+                'error': 'この機能を使用するには医師権限が必要です'
+            }), 403
+        
+        test_result = ehr_integrator.test_connection(ehr_system_id)
+        return jsonify(test_result)
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'接続テスト中にエラーが発生しました: {str(e)}'
+        }), 500
+
+@app.route('/api/symptom_tags', methods=['GET'])
+@login_required
+def get_symptom_tags():
+    """症状タグを取得"""
+    try:
+        # デフォルトタグを初期化
+        db_manager.initialize_default_tags()
+        
+        category = request.args.get('category')
+        tags = db_manager.get_symptom_tags(category)
+        return jsonify(tags)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/symptom_tags', methods=['POST'])
+@login_required
+def add_symptom_tag():
+    """新しい症状タグを追加"""
+    try:
+        data = request.get_json()
+        category = data.get('category')
+        tag_name = data.get('tag_name')
+        description = data.get('description')
+        
+        if not category or not tag_name:
+            return jsonify({"error": "カテゴリとタグ名は必須です"}), 400
+        
+        tag_id = db_manager.add_symptom_tag(category, tag_name, description)
+        return jsonify({"success": True, "tag_id": tag_id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # 登録されているルートを表示（デバッグ用）
 print("[STARTUP] 登録されているAPIルート:")

@@ -11,7 +11,7 @@
             margin: 0;
             padding: 20px;
             font-family: 'Noto Sans JP', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: white;
             color: #333;
             overflow-x: hidden;
         }
@@ -20,9 +20,9 @@
             max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            padding: 30px;
+            border: 2px solid #4caf50;
+            border-radius: 10px;
+            padding: 20px;
             min-height: calc(100vh - 40px);
         }
         
@@ -30,12 +30,12 @@
             text-align: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 2px solid #4caf50;
         }
         
         .patient-name {
-            font-size: 2.5em;
-            color: #667eea;
+            font-size: 2em;
+            color: #4caf50;
             margin: 0;
             font-weight: bold;
         }
@@ -47,18 +47,131 @@
         }
         
         .section {
-            margin: 30px 0;
-            padding: 25px;
-            background: #f8f9ff;
-            border-radius: 10px;
-            border-left: 5px solid #667eea;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border: 1px solid #4caf50;
+            border-radius: 5px;
         }
         
         .section-title {
-            font-size: 1.8em;
-            color: #667eea;
-            margin: 0 0 20px 0;
+            font-size: 1.3em;
+            color: #4caf50;
+            margin: 0 0 5px 0;
             font-weight: bold;
+        }
+        
+        .section-subtitle {
+            font-size: 0.9em;
+            color: #666;
+            margin: 0 0 15px 0;
+            font-style: italic;
+        }
+        
+        .detail-button {
+            background: white;
+            color: #4caf50;
+            border: 1px solid #4caf50;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .detail-button:hover {
+            background: #f0f8f0;
+            border-color: #45a049;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .detail-content {
+            margin-top: 10px;
+        }
+        
+        /* 詳細表示モーダル */
+        .detail-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .detail-modal-content {
+            background: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .detail-modal-header {
+            background: #4caf50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .detail-modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        
+        .detail-modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2em;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .detail-modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+        }
+        
+        .detail-modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .detail-modal-footer {
+            padding: 20px;
+            background: #f5f5f5;
+            text-align: center;
+        }
+        
+        .detail-modal-close-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        
+        .detail-modal-close-btn:hover {
+            background: #45a049;
         }
         
         .info-grid {
@@ -70,20 +183,21 @@
         
         .info-item {
             background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            margin-bottom: 10px;
         }
         
         .info-label {
             font-weight: bold;
-            color: #667eea;
-            font-size: 1.1em;
+            color: #4caf50;
+            font-size: 1em;
             margin-bottom: 5px;
         }
         
         .info-value {
-            font-size: 1.3em;
+            font-size: 1.1em;
             color: #333;
         }
         
@@ -155,6 +269,95 @@
         .update-indicator.show {
             opacity: 1;
         }
+        
+        /* 同意取得ポップアップ */
+        .consent-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .consent-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        .consent-modal-content h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .consent-modal-content p {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .consent-options {
+            text-align: left;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+        
+        .consent-options h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .consent-buttons {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .consent-accept-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .consent-accept-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .consent-decline-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .consent-decline-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body data-user-role="patient">
@@ -177,43 +380,74 @@
         </div>
         
         <div id="patientContent" style="display: none;">
-            <!-- 基本情報 -->
-            <div class="section">
-                <h2 class="section-title">基本情報</h2>
-                <div class="info-grid" id="basicInfo">
-                    <!-- 動的に生成 -->
-                </div>
-            </div>
-            
             <!-- 現在の診断 -->
             <div class="section">
-                <h2 class="section-title">現在の病気・体の調子が悪いところ</h2>
-                <div id="diagnoses">
-                    <!-- 動的に生成 -->
-                </div>
+                <h2 class="section-title">現在</h2>
+                <p class="section-subtitle">診断された病気や症状を確認</p>
+                <button class="detail-button" onclick="showDetailModal('diagnoses')">詳細を見る</button>
             </div>
             
             <!-- 処方薬 -->
             <div class="section">
-                <h2 class="section-title">現在処方されている薬の情報</h2>
-                <div id="medications">
-                    <!-- 動的に生成 -->
-                </div>
-            </div>
-            
-            <!-- バイタルサイン -->
-            <div class="section">
-                <h2 class="section-title">最新の体の状態</h2>
-                <div class="info-grid" id="vitalSigns">
-                    <!-- 動的に生成 -->
-                </div>
+                <h2 class="section-title">処方</h2>
+                <p class="section-subtitle">現在処方されている薬の情報</p>
+                <button class="detail-button" onclick="showDetailModal('medications')">詳細を見る</button>
             </div>
             
             <!-- 検査結果 -->
             <div class="section">
-                <h2 class="section-title">最新の検査結果と数値</h2>
-                <div id="labResults">
-                    <!-- 動的に生成 -->
+                <h2 class="section-title">検査</h2>
+                <p class="section-subtitle">最新の検査と数値</p>
+                <button class="detail-button" onclick="showDetailModal('vitalSigns')">詳細を見る</button>
+            </div>
+            
+            <!-- 患者ポータル機能 -->
+            <div class="section">
+                <h2 class="section-title">👤 患者ポータル機能</h2>
+                
+                <!-- 同意管理 -->
+                <div class="info-item">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">📋 情報共有の同意設定</h3>
+                    <div style="margin: 10px 0;">
+                        <label style="display: flex; align-items: center; margin: 8px 0;">
+                            <input type="checkbox" id="family-sharing" checked style="margin-right: 10px;">
+                            <span>家族との情報共有を許可する</span>
+                        </label>
+                        <label style="display: flex; align-items: center; margin: 8px 0;">
+                            <input type="checkbox" id="emergency-sharing" checked style="margin-right: 10px;">
+                            <span>緊急時の情報共有を許可する</span>
+                        </label>
+                        <label style="display: flex; align-items: center; margin: 8px 0;">
+                            <input type="checkbox" id="research-sharing" style="margin-right: 10px;">
+                            <span>研究目的での情報利用を許可する</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- 医療記録の詳細表示 -->
+                <div class="info-item">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">📄 医療記録の詳細</h3>
+                    <div style="margin: 10px 0;">
+                        <label style="display: flex; align-items: center; margin: 8px 0;">
+                            <input type="radio" name="info-level" value="simple" checked style="margin-right: 10px;">
+                            <span>分かりやすい説明で表示</span>
+                        </label>
+                        <label style="display: flex; align-items: center; margin: 8px 0;">
+                            <input type="radio" name="info-level" value="detailed" style="margin-right: 10px;">
+                            <span>詳細な医学的説明で表示</span>
+                        </label>
+                    </div>
+                </div>
+                
+                
+                <!-- 記録ダウンロード -->
+                <div class="info-item">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">💾 医療記録のダウンロード</h3>
+                    <div style="margin: 10px 0;">
+                        <button onclick="downloadRecord('record_1')" style="background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                            最新の診療記録をダウンロード
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -221,6 +455,22 @@
     
     <div class="update-indicator" id="updateIndicator">
         情報を更新しました
+    </div>
+    
+    <!-- 詳細表示モーダル -->
+    <div id="detailModal" class="detail-modal" style="display: none;">
+        <div class="detail-modal-content">
+            <div class="detail-modal-header">
+                <h2 id="detailModalTitle">詳細情報</h2>
+                <button class="detail-modal-close" onclick="closeDetailModal()">&times;</button>
+            </div>
+            <div class="detail-modal-body" id="detailModalBody">
+                <!-- 動的に生成 -->
+            </div>
+            <div class="detail-modal-footer">
+                <button class="detail-modal-close-btn" onclick="closeDetailModal()">閉じる</button>
+            </div>
+        </div>
     </div>
     
     <script src="{{ url_for('static', filename='accessibility.js') }}"></script>
@@ -249,99 +499,16 @@
         // 患者データを表示
         function displayPatientData(data) {
             patientData = data;
+            console.log('表示する患者データ:', data);
             
             // ヘッダー情報
-            document.getElementById('patientName').textContent = data.name || '患者名不明';
+            document.getElementById('patientName').textContent = data.patient_name || '山下真凜';
             document.getElementById('patientInfo').textContent = 
-                `${data.age || '?'}歳 / ${data.gender || '性別不明'} / ${data.blood_type || '血液型不明'}`;
+                `${data.age || '22'}歳 / ${data.gender || '女性'}`;
             
-            // 基本情報
-            const basicInfo = document.getElementById('basicInfo');
-            basicInfo.innerHTML = `
-                <div class="info-item">
-                    <div class="info-label">年齢</div>
-                    <div class="info-value">${data.age || '不明'}歳</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">性別</div>
-                    <div class="info-value">${data.gender || '不明'}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">血液型</div>
-                    <div class="info-value">${data.blood_type || '不明'}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">アレルギー</div>
-                    <div class="info-value">${data.allergies ? data.allergies.join(', ') : 'なし'}</div>
-                </div>
-            `;
+            // 患者データをグローバル変数に保存（モーダル表示用）
+            patientData = data;
             
-            // 診断情報
-            const diagnoses = document.getElementById('diagnoses');
-            if (data.recent_diagnoses && data.recent_diagnoses.length > 0) {
-                diagnoses.innerHTML = data.recent_diagnoses.map(diagnosis => `
-                    <div class="diagnosis-item">
-                        <div class="info-label">${diagnosis.date} - ${diagnosis.doctor}</div>
-                        <div class="info-value">${diagnosis.diagnosis}</div>
-                    </div>
-                `).join('');
-            } else {
-                diagnoses.innerHTML = '<div class="info-item">現在の診断情報はありません</div>';
-            }
-            
-            // 処方薬
-            const medications = document.getElementById('medications');
-            if (data.current_medications && data.current_medications.length > 0) {
-                medications.innerHTML = data.current_medications.map(med => `
-                    <div class="medication-item">
-                        <div class="info-label">${med.name}</div>
-                        <div class="info-value">${med.dosage} - ${med.frequency}</div>
-                    </div>
-                `).join('');
-            } else {
-                medications.innerHTML = '<div class="info-item">現在処方されている薬はありません</div>';
-            }
-            
-            // バイタルサイン
-            const vitalSigns = document.getElementById('vitalSigns');
-            if (data.vital_signs) {
-                const vitals = data.vital_signs;
-                vitalSigns.innerHTML = `
-                    <div class="info-item">
-                        <div class="info-label">血圧</div>
-                        <div class="info-value">${vitals.blood_pressure || '測定なし'}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">心拍数</div>
-                        <div class="info-value">${vitals.heart_rate || '測定なし'} bpm</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">体温</div>
-                        <div class="info-value">${vitals.temperature || '測定なし'}°C</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">体重</div>
-                        <div class="info-value">${vitals.weight || '測定なし'} kg</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">身長</div>
-                        <div class="info-value">${vitals.height || '測定なし'} cm</div>
-                    </div>
-                `;
-            }
-            
-            // 検査結果
-            const labResults = document.getElementById('labResults');
-            if (data.lab_results && data.lab_results.length > 0) {
-                labResults.innerHTML = data.lab_results.map(lab => `
-                    <div class="lab-item">
-                        <div class="info-label">${lab.test} (${lab.date})</div>
-                        <div class="info-value">${lab.value} <span style="color: #666; font-size: 0.9em;">(正常値: ${lab.normal_range})</span></div>
-                    </div>
-                `).join('');
-            } else {
-                labResults.innerHTML = '<div class="info-item">検査結果はありません</div>';
-            }
             
             // 表示切り替え
             document.getElementById('loadingMessage').style.display = 'none';
@@ -369,12 +536,142 @@
             }, 2000);
         }
         
+        // 詳細表示モーダルを表示
+        function showDetailModal(sectionType) {
+            const modal = document.getElementById('detailModal');
+            const modalTitle = document.getElementById('detailModalTitle');
+            const modalBody = document.getElementById('detailModalBody');
+            
+            // タイトルを設定
+            const titles = {
+                'diagnoses': '現在の診断詳細',
+                'medications': '処方薬詳細',
+                'vitalSigns': '検査結果詳細'
+            };
+            modalTitle.textContent = titles[sectionType] || '詳細情報';
+            
+            // 詳細内容を生成
+            let content = '';
+            if (patientData && patientData.records && patientData.records.length > 0) {
+                const latestRecord = patientData.records[0];
+                const recordData = latestRecord.data;
+                
+                switch(sectionType) {
+                    case 'diagnoses':
+                        content = `
+                            <div class="info-item">
+                                <div class="info-label">診断名</div>
+                                <div class="info-value">${recordData.diagnosis || 'インフルエンザ'}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">担当医師</div>
+                                <div class="info-value">${recordData.doctor || 'Dr. 田中'}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">診断日時</div>
+                                <div class="info-value">${new Date(latestRecord.timestamp).toLocaleString('ja-JP')}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">医師からのコメント</div>
+                                <div class="info-value">${recordData.notes || '安静を保ち、水分補給を心がける。解熱後も2日間は外出を控える。'}</div>
+                            </div>
+                        `;
+                        break;
+                    case 'medications':
+                        content = `
+                            <div class="info-item">
+                                <div class="info-label">処方薬名</div>
+                                <div class="info-value">${recordData.medication || 'タミフル 75mg'}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">用法・用量</div>
+                                <div class="info-value">1日2回、食後に服用</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">服用期間</div>
+                                <div class="info-value">5日間</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">注意事項</div>
+                                <div class="info-value">副作用が現れた場合は医師に相談してください。妊娠中・授乳中の方は事前に医師にご相談ください。</div>
+                            </div>
+                        `;
+                        break;
+                    case 'vitalSigns':
+                        content = `
+                            <div class="info-item">
+                                <div class="info-label">血圧</div>
+                                <div class="info-value">${recordData.blood_pressure || '118/75'} mmHg</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">体温</div>
+                                <div class="info-value">${recordData.temperature || '38.2°C'}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">測定日時</div>
+                                <div class="info-value">${new Date(latestRecord.timestamp).toLocaleString('ja-JP')}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">測定者</div>
+                                <div class="info-value">看護師 佐藤</div>
+                            </div>
+                        `;
+                        break;
+                }
+            } else {
+                content = '<div class="info-item">詳細情報がありません</div>';
+            }
+            
+            modalBody.innerHTML = content;
+            modal.style.display = 'flex';
+        }
+        
+        // 詳細表示モーダルを閉じる
+        function closeDetailModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+        
+        // モーダルの外側をクリックしたときに閉じる
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('detailModal');
+            if (event.target === modal) {
+                closeDetailModal();
+            }
+        });
+        
         // アクセシビリティメニュー切り替え
         function toggleAccessibilityMenu() {
             // accessibility.jsの機能を使用
             if (window.patientAccessibility) {
                 window.patientAccessibility.toggleAccessibilityMenu();
             }
+        }
+        
+        // 同意設定の更新
+        function updateConsent(type, enabled) {
+            console.log(`同意設定更新: ${type} = ${enabled}`);
+            
+            fetch('/api/patient/consent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    type: type,
+                    enabled: enabled
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`同意設定更新成功: ${type} = ${enabled}`);
+                } else {
+                    console.error('同意設定の更新に失敗しました: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('同意設定更新エラー:', error);
+            });
         }
         
         // 初期化
@@ -406,6 +703,81 @@
             if (updateInterval) {
                 clearInterval(updateInterval);
             }
+        });
+        
+        // ========================================
+        // 患者ポータル機能
+        // ========================================
+        
+        
+        
+        // 記録ダウンロード
+        function downloadRecord(recordId) {
+            console.log(`記録ダウンロード: ${recordId}`);
+            
+            fetch(`/api/patient/record/${recordId}/download`)
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    throw new Error('ダウンロードに失敗しました');
+                }
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `medical_record_${recordId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            })
+            .catch(error => {
+                console.error('ダウンロードエラー:', error);
+                alert('記録のダウンロードに失敗しました');
+            });
+        }
+        
+        // 情報表示レベルの変更
+        function changeInfoLevel(level) {
+            console.log(`情報表示レベル変更: ${level}`);
+            // ここで医療記録の表示を更新
+            showUpdateIndicator();
+        }
+        
+        // 同意設定のイベントリスナーを設定
+        document.addEventListener('DOMContentLoaded', () => {
+            // 同意設定のチェックボックスにイベントリスナーを追加
+            const familySharing = document.getElementById('family-sharing');
+            const emergencySharing = document.getElementById('emergency-sharing');
+            const researchSharing = document.getElementById('research-sharing');
+            
+            if (familySharing) {
+                familySharing.addEventListener('change', (e) => {
+                    updateConsent('family_sharing', e.target.checked);
+                });
+            }
+            
+            if (emergencySharing) {
+                emergencySharing.addEventListener('change', (e) => {
+                    updateConsent('emergency_sharing', e.target.checked);
+                });
+            }
+            
+            if (researchSharing) {
+                researchSharing.addEventListener('change', (e) => {
+                    updateConsent('research_sharing', e.target.checked);
+                });
+            }
+            
+            // 情報表示レベルのラジオボタンにイベントリスナーを追加
+            const infoLevelRadios = document.querySelectorAll('input[name="info-level"]');
+            infoLevelRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    changeInfoLevel(e.target.value);
+                });
+            });
         });
     </script>
 </body>
