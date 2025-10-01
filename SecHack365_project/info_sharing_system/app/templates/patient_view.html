@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>患者向け医療情報表示 - SecHack365</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .patient-view-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .patient-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+        }
+        
+        .patient-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+        }
+        
+        .patient-header p {
+            margin: 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .medical-info-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .medical-info-section h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            font-size: 1.4em;
+        }
+        
+        .info-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .info-item h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+        
+        .info-item p {
+            margin: 0;
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        .consent-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: #e8f5e8;
+            border-radius: 10px;
+            border: 2px solid #27ae60;
+            text-align: center;
+        }
+        
+        .consent-section h3 {
+            margin-top: 0;
+            color: #27ae60;
+            font-size: 1.5em;
+        }
+        
+        .consent-buttons {
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 150px;
+        }
+        
+        .btn-consent {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-consent:hover {
+            background-color: #229954;
+            transform: translateY(-2px);
+        }
+        
+        .btn-decline {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-decline:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        .btn-question {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn-question:hover {
+            background-color: #e67e22;
+            transform: translateY(-2px);
+        }
+        
+        .question-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border: 1px solid #ffeaa7;
+            display: none;
+        }
+        
+        .question-section.show {
+            display: block;
+        }
+        
+        .question-form textarea {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .question-options {
+            margin-bottom: 15px;
+        }
+        
+        .question-options label {
+            display: inline-block;
+            margin-right: 20px;
+            font-weight: normal;
+        }
+        
+        .question-options input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        
+        .status-message {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .explanation-toggle {
+            background: none;
+            border: none;
+            color: #3498db;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        
+        .detailed-explanation {
+            margin-top: 10px;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .detailed-explanation.show {
+            display: block;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .urgent-indicator {
+            background-color: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="patient-view-container">
+            <div class="patient-header">
+                <h1>あなたの医療情報</h1>
+                <p>医師が入力した医療情報を確認し、同意してください</p>
+            </div>
+            
+            <div id="status-message" class="status-message" style="display: none;"></div>
+            
+            <div id="medical-info">
+                <!-- 医療情報がここに動的に表示されます -->
+            </div>
+            
+            <div class="consent-section" id="consent-section">
+                <h3>情報共有への同意</h3>
+                <p>上記の医療情報を医師と共有し、今後の治療に活用することに同意しますか？</p>
+                
+                <div class="consent-buttons">
+                    <button class="btn btn-consent" id="consent-btn">同意する</button>
+                    <button class="btn btn-decline" id="decline-btn">同意しない</button>
+                    <button class="btn btn-question" id="question-btn">質問する</button>
+                </div>
+            </div>
+            
+            <div class="question-section" id="question-section">
+                <h4>医師への質問</h4>
+                <form id="question-form">
+                    <textarea id="question-text" placeholder="医師に質問したいことがあれば記入してください"></textarea>
+                    
+                    <div class="question-options">
+                        <label>
+                            <input type="checkbox" id="urgent-question"> 緊急の質問
+                        </label>
+                        <label>
+                            <input type="checkbox" id="share-with-family"> 家族と共有
+                        </label>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button type="submit" class="btn btn-primary">質問を送信</button>
+                        <button type="button" class="btn btn-secondary" id="cancel-question">キャンセル</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="loading" id="loading">
+                <p>処理中です...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentSessionId = null;
+        let medicalData = null;
+        
+        // ページ読み込み時に医療情報を取得
+        document.addEventListener('DOMContentLoaded', function() {
+            // URLからセッションIDを取得
+            const pathParts = window.location.pathname.split('/');
+            currentSessionId = pathParts[pathParts.length - 1];
+            
+            if (currentSessionId) {
+                loadMedicalRecord();
+            } else {
+                showError('セッションIDが見つかりません。');
+            }
+        });
+        
+        // 医療記録を読み込み
+        function loadMedicalRecord() {
+            showLoading(true);
+            
+            fetch(`/api/get_medical_record/${currentSessionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    showLoading(false);
+                    if (data.error) {
+                        showError(data.error);
+                    } else {
+                        medicalData = data;
+                        displayMedicalInfo(data);
+                    }
+                })
+                .catch(error => {
+                    showLoading(false);
+                    showError('医療情報の読み込みに失敗しました: ' + error.message);
+                });
+        }
+        
+        // 医療情報を表示
+        function displayMedicalInfo(data) {
+            const medicalInfoDiv = document.getElementById('medical-info');
+            
+            const html = `
+                <div class="medical-info-section">
+                    <h3>📋 診断結果</h3>
+                    <div class="info-item">
+                        <h4>診断名</h4>
+                        <p>${data.diagnosis || '未入力'}</p>
+                        <button class="explanation-toggle" onclick="toggleExplanation('diagnosis')">詳しく説明</button>
+                        <div class="detailed-explanation" id="diagnosis-explanation">
+                            ${data.diagnosis_details || '詳細情報はありません'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="medical-info-section">
+                    <h3>💊 お薬・治療について</h3>
+                    <div class="info-item">
+                        <h4>処方薬</h4>
+                        <p>${data.medication || '未入力'}</p>
+                        <button class="explanation-toggle" onclick="toggleExplanation('medication')">詳しく説明</button>
+                        <div class="detailed-explanation" id="medication-explanation">
+                            ${data.medication_instructions || '服薬指導はありません'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="medical-info-section">
+                    <h3>🏥 今後の治療について</h3>
+                    <div class="info-item">
+                        <h4>治療方針</h4>
+                        <p>${data.treatment_plan || '未入力'}</p>
+                        <button class="explanation-toggle" onclick="toggleExplanation('treatment')">詳しく説明</button>
+                        <div class="detailed-explanation" id="treatment-explanation">
+                            ${data.follow_up || 'フォローアップ予定はありません'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="medical-info-section">
+                    <h3>👨‍⚕️ 医師からの説明</h3>
+                    <div class="info-item">
+                        <h4>患者向け説明</h4>
+                        <p>${data.patient_explanation || '説明はありません'}</p>
+                        ${data.risk_benefit_explanation ? `
+                            <button class="explanation-toggle" onclick="toggleExplanation('risk')">リスクと効果について</button>
+                            <div class="detailed-explanation" id="risk-explanation">
+                                ${data.risk_benefit_explanation}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="timestamp">
+                    最終更新: ${new Date().toLocaleString('ja-JP')}
+                </div>
+            `;
+            
+            medicalInfoDiv.innerHTML = html;
+        }
+        
+        // 説明の表示/非表示を切り替え
+        function toggleExplanation(type) {
+            const explanation = document.getElementById(type + '-explanation');
+            if (explanation) {
+                explanation.classList.toggle('show');
+            }
+        }
+        
+        // 同意ボタンの処理
+        document.getElementById('consent-btn').addEventListener('click', function() {
+            submitConsent('consented');
+        });
+        
+        // 不同意ボタンの処理
+        document.getElementById('decline-btn').addEventListener('click', function() {
+            submitConsent('declined');
+        });
+        
+        // 質問ボタンの処理
+        document.getElementById('question-btn').addEventListener('click', function() {
+            document.getElementById('question-section').classList.add('show');
+        });
+        
+        // 質問キャンセルボタンの処理
+        document.getElementById('cancel-question').addEventListener('click', function() {
+            document.getElementById('question-section').classList.remove('show');
+            document.getElementById('question-form').reset();
+        });
+        
+        // 質問フォームの送信
+        document.getElementById('question-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const questionText = document.getElementById('question-text').value;
+            if (!questionText.trim()) {
+                showError('質問内容を入力してください。');
+                return;
+            }
+            
+            const isUrgent = document.getElementById('urgent-question').checked;
+            const shareWithFamily = document.getElementById('share-with-family').checked;
+            
+            submitQuestion(questionText, isUrgent, shareWithFamily);
+        });
+        
+        // 同意を送信
+        function submitConsent(consentStatus) {
+            showLoading(true);
+            
+            const data = {
+                consent_status: consentStatus,
+                consent_timestamp: new Date().toISOString()
+            };
+            
+            fetch(`/api/patient_consent/${currentSessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                showLoading(false);
+                if (result.success) {
+                    if (consentStatus === 'consented') {
+                        showStatus('同意が記録されました。電子カルテシステムへの転送を開始します。', 'success');
+                        // 電子カルテ転送を開始
+                        transferToEHR();
+                    } else {
+                        showStatus('不同意が記録されました。', 'error');
+                    }
+                } else {
+                    showError(result.error || '同意の記録に失敗しました。');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showError('通信エラーが発生しました: ' + error.message);
+            });
+        }
+        
+        // 質問を送信
+        function submitQuestion(questionText, isUrgent, shareWithFamily) {
+            showLoading(true);
+            
+            const data = {
+                question_text: questionText,
+                is_urgent: isUrgent,
+                share_with_family: shareWithFamily,
+                question_timestamp: new Date().toISOString()
+            };
+            
+            fetch(`/api/patient_question/${currentSessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                showLoading(false);
+                if (result.success) {
+                    showStatus('質問が送信されました。医師から回答があります。', 'success');
+                    document.getElementById('question-section').classList.remove('show');
+                    document.getElementById('question-form').reset();
+                } else {
+                    showError(result.error || '質問の送信に失敗しました。');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showError('通信エラーが発生しました: ' + error.message);
+            });
+        }
+        
+        // 電子カルテシステムに転送
+        function transferToEHR() {
+            fetch(`/api/transfer_to_ehr/${currentSessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ehr_system_id: 'generic_fhir',
+                    transfer_timestamp: new Date().toISOString()
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showStatus('電子カルテシステムへの転送が完了しました。', 'success');
+                } else {
+                    showStatus('電子カルテシステムへの転送に失敗しました: ' + result.error, 'error');
+                }
+            })
+            .catch(error => {
+                showStatus('電子カルテシステムへの転送中にエラーが発生しました: ' + error.message, 'error');
+            });
+        }
+        
+        // ステータスメッセージを表示
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        // エラーメッセージを表示
+        function showError(message) {
+            showStatus(message, 'error');
+        }
+        
+        // ローディング表示
+        function showLoading(show) {
+            const loadingDiv = document.getElementById('loading');
+            if (show) {
+                loadingDiv.classList.add('show');
+            } else {
+                loadingDiv.classList.remove('show');
+            }
+        }
+        
+        // 定期的に医療情報を更新（リアルタイム表示）
+        setInterval(function() {
+            if (currentSessionId) {
+                loadMedicalRecord();
+            }
+        }, 30000); // 30秒ごとに更新
+    </script>
+</body>
+</html>

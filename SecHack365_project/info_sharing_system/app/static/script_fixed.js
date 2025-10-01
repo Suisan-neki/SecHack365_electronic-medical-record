@@ -109,18 +109,8 @@ window.loadPatientData = async function() {
 window.showPatientView = function() {
     console.log('👁️ PC用患者ビューを表示中...');
     
-    // 患者ビューに切り替え
-    switchView('patient');
-    
-    // アクセシビリティ設定をリセット
-    if (typeof accessibility !== 'undefined' && accessibility.resetAccessibility) {
-        accessibility.resetAccessibility();
-    }
-    
-    // 変換アイコンを作成（存在しない場合のみ）
-    if (typeof accessibility !== 'undefined' && accessibility.createAccessibilityButton) {
-        accessibility.createAccessibilityButton();
-    }
+    // 同意取得ポップアップを表示
+    showConsentModal();
     
     // 操作履歴に記録
     addToOperationHistory('PC用患者ビューを表示', 'patient_view_display');
@@ -129,15 +119,12 @@ window.showPatientView = function() {
 // ビュー切り替え関数
 function switchView(viewType) {
     if (viewType === 'patient') {
-        document.getElementById('private-view').style.display = 'none';
-        document.getElementById('patient-view').style.display = 'block';
-        document.getElementById('medical-detail-view').style.display = 'none';
-        fetchPatientData();
-        addToOperationHistory('患者向けビューに切り替え', 'view_switch');
+        // 患者用ビューは新しいタブで開くため、この関数は使用されない
+        console.log('患者用ビューは新しいタブで開かれます');
+        return;
     } else {
+        // 医師向けビューのみを表示（患者用ビューは削除済み）
         document.getElementById('private-view').style.display = 'block';
-        document.getElementById('patient-view').style.display = 'none';
-        document.getElementById('medical-detail-view').style.display = 'none';
         
         // 医師の画面に戻る際にアクセシビリティ設定をリセット
         if (typeof accessibility !== 'undefined' && accessibility.resetAccessibility) {
@@ -869,14 +856,106 @@ document.addEventListener('DOMContentLoaded', function() {
     switchView('private');
 });
 
+// 同意取得ポップアップの表示
+function showConsentModal() {
+    console.log('showConsentModal関数が呼び出されました');
+    const modal = document.getElementById('consentModal');
+    console.log('モーダル要素:', modal);
+    if (modal) {
+        modal.style.display = 'flex';
+        console.log('ポップアップを表示しました');
+    } else {
+        console.error('consentModal要素が見つかりません');
+    }
+}
+
+// 同意設定の更新
+function updateConsent(type, enabled) {
+    console.log(`同意設定更新: ${type} = ${enabled}`);
+    
+    fetch('/api/patient/consent', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            type: type,
+            enabled: enabled
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log(`同意設定更新成功: ${type} = ${enabled}`);
+        } else {
+            console.error('同意設定の更新に失敗しました: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('同意設定更新エラー:', error);
+    });
+}
+
+// 同意を受け入れる
+function acceptConsent() {
+    console.log('同意を受け入れています...');
+    
+    // ポップアップの設定を取得
+    const familyElement = document.getElementById('consent-family');
+    const emergencyElement = document.getElementById('consent-emergency');
+    const researchElement = document.getElementById('consent-research');
+    
+    console.log('ポップアップ要素:', {
+        family: familyElement,
+        emergency: emergencyElement,
+        research: researchElement
+    });
+    
+    if (!familyElement || !emergencyElement || !researchElement) {
+        console.error('ポップアップの要素が見つかりません');
+        return;
+    }
+    
+    const familyConsent = familyElement.checked;
+    const emergencyConsent = emergencyElement.checked;
+    const researchConsent = researchElement.checked;
+    
+    console.log('同意設定:', {
+        family: familyConsent,
+        emergency: emergencyConsent,
+        research: researchConsent
+    });
+    
+    // ポップアップを非表示
+    document.getElementById('consentModal').style.display = 'none';
+    
+    // 同意設定をサーバーに送信
+    updateConsent('family_sharing', familyConsent);
+    updateConsent('emergency_sharing', emergencyConsent);
+    updateConsent('research_sharing', researchConsent);
+    
+    // 患者用ビューを新しいタブで開く
+    const patientDisplayUrl = '/patient-display';
+    window.open(patientDisplayUrl, '_blank');
+    
+    console.log('同意設定が受け入れられました');
+}
+
+// 同意を拒否する
+function declineConsent() {
+    alert('同意が必要です。患者用ビューを開くことができません。');
+    document.getElementById('consentModal').style.display = 'none';
+}
+
+
 // 患者ポータルを開く関数
 window.openPatientPortal = function() {
     console.log('患者ポータルを開きます...');
+    console.log('openPatientPortal関数が呼び出されました');
     
-    // 新しいタブで患者ポータルを開く
-    const patientPortalUrl = '/patient/P001';
-    window.open(patientPortalUrl, '_blank');
+    // 同意取得ポップアップを表示
+    showConsentModal();
     
     // 操作履歴に記録
-    addToOperationHistory('患者ポータルを開きました', 'info');
+    addToOperationHistory('患者用ビューを開きました', 'info');
 };

@@ -38,9 +38,6 @@ class PatientAccessibility {
     }
     
     initializeAccessibility() {
-        // アクセシビリティボタンを追加
-        this.createAccessibilityButton();
-        
         // 患者ビューが表示されたときの処理
         document.addEventListener('DOMContentLoaded', () => {
             this.checkPatientRole();
@@ -135,11 +132,21 @@ class PatientAccessibility {
         const userRole = this.getCurrentUserRole();
         console.log('checkPatientRole - 現在のユーザーロール:', userRole);
         
-        if (userRole === 'patient') {
-            console.log('患者ロールを検出しました。アクセシビリティ機能を有効化します。');
+        // 患者ビューが表示されているかチェック
+        const patientView = document.getElementById('patient-view');
+        const isPatientViewVisible = patientView && patientView.style.display !== 'none';
+        
+        if (userRole === 'patient' && isPatientViewVisible) {
+            console.log('患者ロールを検出し、患者ビューが表示されています。アクセシビリティ機能を有効化します。');
+            this.createAccessibilityButton();
             this.enableBasicAccessibility();
         } else {
-            console.log('患者ロールではないため、アクセシビリティ機能は無効です。');
+            console.log('患者ロールではないか、患者ビューが表示されていないため、アクセシビリティ機能は無効です。');
+            // 既存のアクセシビリティボタンを削除
+            const existingButton = document.querySelector('.language-selector');
+            if (existingButton) {
+                existingButton.remove();
+            }
         }
     }
     
