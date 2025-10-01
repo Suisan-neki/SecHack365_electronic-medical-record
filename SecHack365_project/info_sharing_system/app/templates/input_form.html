@@ -28,6 +28,141 @@
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             background: #f9f9f9;
+            transition: all 0.3s ease;
+        }
+        
+        .form-section.minimized {
+            padding: 15px 20px;
+        }
+        
+        .form-section.minimized .form-group:not(.summary) {
+            display: none;
+        }
+        
+        .section-summary {
+            display: none;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #2c3e50;
+            cursor: pointer;
+        }
+        
+        .section-summary:hover {
+            background: #c8e6c9;
+        }
+        
+        .form-section.minimized .section-summary {
+            display: block;
+        }
+        
+        .expand-icon {
+            float: right;
+            font-size: 14px;
+        }
+        
+        /* 自動拡張テキストエリア */
+        textarea.auto-expand {
+            min-height: 40px;
+            resize: none;
+            overflow-y: hidden;
+            transition: height 0.1s ease;
+            line-height: 1.5;
+            padding: 8px 12px;
+            box-sizing: border-box;
+        }
+        
+        /* 通常のテキストエリア（auto-expandでないもの）も調整 */
+        textarea:not(.auto-expand) {
+            min-height: 40px;
+            line-height: 1.5;
+            padding: 8px 12px;
+            box-sizing: border-box;
+        }
+        
+        /* 折りたたみ可能なカテゴリー */
+        .collapsible-category {
+            margin-bottom: 8px;
+        }
+        
+        .category-header {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+            user-select: none;
+        }
+        
+        .category-header:hover {
+            background: #e0e0e0;
+        }
+        
+        .category-header strong {
+            flex: 1;
+            font-size: 12px;
+        }
+        
+        .category-toggle {
+            font-size: 16px;
+            margin-right: 8px;
+            transition: transform 0.2s ease;
+        }
+        
+        .category-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+        
+        .category-content {
+            margin-top: 8px;
+            display: block;
+        }
+        
+        .category-content.collapsed {
+            display: none;
+        }
+        
+        /* プリセットボタン */
+        .btn-preset {
+            background: #fff;
+            border: 1px solid #3498db;
+            color: #3498db;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-preset:hover {
+            background: #3498db;
+            color: white;
+        }
+        
+        /* 確定ボタンのスタイル */
+        .btn-confirm {
+            background: #95a5a6 !important;
+            border: 1px solid #7f8c8d !important;
+            color: white !important;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-confirm.ready {
+            background: #27ae60 !important;
+            border: 1px solid #229954 !important;
+        }
+        
+        .btn-confirm.ready:hover {
+            background: #229954 !important;
+        }
+        
+        .btn-confirm:disabled {
+            background: #bdc3c7 !important;
+            cursor: not-allowed;
         }
         
         .full-width-section {
@@ -353,15 +488,88 @@
             <form id="medical-record-form">
                 <!-- 3カラムレイアウト -->
                 <div class="three-column-layout">
-                    <!-- 左カラム: 症状 -->
-                    <div class="form-section">
-                        <h3>1. 症状</h3>
+                    <!-- 症状・診断セクション -->
+                    <div class="form-section" id="section-symptoms">
+                        <h3>1. 症状・診断</h3>
                         
-                        <!-- 症状タグ選択エリア -->
+                        <!-- サマリー表示（折りたたみ時） -->
+                        <div class="section-summary summary" id="summary-symptoms" onclick="expandSection('symptoms')">
+                            <span class="expand-icon">▼ 展開</span>
+                            <div id="summary-symptoms-text"></div>
+                        </div>
+                        
+                        <!-- 症状プリセット -->
+                        <div class="form-group">
+                            <label>よく使う症状セット:</label>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                                <button type="button" class="btn btn-preset" onclick="applySymptomPreset('cold')">🤧 風邪症状</button>
+                                <button type="button" class="btn btn-preset" onclick="applySymptomPreset('flu')">🤒 インフル症状</button>
+                                <button type="button" class="btn btn-preset" onclick="applySymptomPreset('gastro')">🤢 胃腸炎症状</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 症状タグ選択エリア（カテゴリー別・折りたたみ式） -->
                         <div class="form-group">
                             <label>症状タグ選択:</label>
-                            <div class="tag-buttons" id="symptom-tags">
-                                <!-- 症状タグがここに動的に挿入されます -->
+                            
+                            <div class="collapsible-category">
+                                <div class="category-header" onclick="toggleCategory('cold')">
+                                    <span class="category-toggle" id="toggle-cold">▼</span>
+                                    <strong style="color: #e74c3c;">🤧 風邪・呼吸器系</strong>
+                                </div>
+                                <div class="category-content" id="content-cold">
+                                    <div class="tag-buttons" id="symptom-tags-cold"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="collapsible-category">
+                                <div class="category-header" onclick="toggleCategory('pain')">
+                                    <span class="category-toggle collapsed" id="toggle-pain">▼</span>
+                                    <strong style="color: #e67e22;">💢 痛み系</strong>
+                                </div>
+                                <div class="category-content collapsed" id="content-pain">
+                                    <div class="tag-buttons" id="symptom-tags-pain"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="collapsible-category">
+                                <div class="category-header" onclick="toggleCategory('gastro')">
+                                    <span class="category-toggle collapsed" id="toggle-gastro">▼</span>
+                                    <strong style="color: #f39c12;">🤢 消化器系</strong>
+                                </div>
+                                <div class="category-content collapsed" id="content-gastro">
+                                    <div class="tag-buttons" id="symptom-tags-gastro"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="collapsible-category">
+                                <div class="category-header" onclick="toggleCategory('general')">
+                                    <span class="category-toggle collapsed" id="toggle-general">▼</span>
+                                    <strong style="color: #9b59b6;">😴 全身症状</strong>
+                                </div>
+                                <div class="category-content collapsed" id="content-general">
+                                    <div class="tag-buttons" id="symptom-tags-general"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="collapsible-category">
+                                <div class="category-header" onclick="toggleCategory('cardio')">
+                                    <span class="category-toggle collapsed" id="toggle-cardio">▼</span>
+                                    <strong style="color: #e74c3c;">❤️ 循環器系</strong>
+                                </div>
+                                <div class="category-content collapsed" id="content-cardio">
+                                    <div class="tag-buttons" id="symptom-tags-cardio"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="collapsible-category">
+                                <div class="category-header" onclick="toggleCategory('other')">
+                                    <span class="category-toggle collapsed" id="toggle-other">▼</span>
+                                    <strong style="color: #34495e;">📝 その他</strong>
+                                </div>
+                                <div class="category-content collapsed" id="content-other">
+                                    <div class="tag-buttons" id="symptom-tags-other"></div>
+                                </div>
                             </div>
                         </div>
                         
@@ -371,53 +579,61 @@
                             <div class="tag-buttons selected-tags" id="selected-symptom-tags">
                                 <!-- 選択された症状タグがここに移動します -->
                             </div>
+                            <button type="button" class="btn btn-secondary btn-confirm" id="confirm-symptoms-btn" onclick="confirmSymptoms()" style="margin-top: 10px;">
+                                ✓ 症状を確定して説明文に追加
+                            </button>
                         </div>
                         
                         <div class="form-group">
                             <label for="symptoms">症状の詳細 <span class="required">*</span></label>
-                            <small style="color: #666; display: block; margin-bottom: 8px;">
+                            <small style="color: #000; display: block; margin-bottom: 8px; font-weight: 500;">
                                 💡 選択したタグをもとに、症状の詳細（いつから、程度、経過など）を記入してください。タグにない症状も自由に追記できます。
                             </small>
-                            <textarea id="symptoms" name="symptoms" required maxlength="500" placeholder="例: 発熱（選択したタグ）→ 3日前から38.5度の発熱が続いている。解熱剤で一時的に下がるが再び上昇。頭痛（選択したタグ）→ 前頭部を中心に脈打つような痛み。" rows="6"></textarea>
+                            <textarea id="symptoms" name="symptoms" required maxlength="500" placeholder="例: 発熱（選択したタグ）→ 3日前から38.5度の発熱が続いている。解熱剤で一時的に下がるが再び上昇。頭痛（選択したタグ）→ 前頭部を中心に脈打つような痛み。" rows="1" class="auto-expand"></textarea>
                             <div class="char-counter" id="symptoms-counter">0/500</div>
                         </div>
-                    </div>
-
-                    <!-- 中央カラム: 診断・治療計画 -->
-                    <div class="form-section">
-                        <h3>2. 診断・治療計画</h3>
+                        
+                        <hr style="border: none; border-top: 1px dashed #ccc; margin: 20px 0;">
                         
                         <div class="form-group">
                             <label for="diagnosis">診断名 <span class="required">*</span></label>
-                            <small style="color: #666; display: block; margin-bottom: 8px;">
+                            <small style="color: #000; display: block; margin-bottom: 8px; font-weight: 500;">
                                 💡 正式な診断名を自由に入力してください（ICD-10コードも記載可能）。
                             </small>
                             <input type="text" id="diagnosis" name="diagnosis" required maxlength="200" placeholder="例: 急性上気道炎、インフルエンザ（A型）、急性胃腸炎など">
                             <div class="char-counter" id="diagnosis-counter">0/200</div>
+                            <button type="button" class="btn btn-secondary btn-confirm" id="confirm-diagnosis-btn" onclick="confirmDiagnosis()" style="margin-top: 10px;">
+                                ✓ 診断を確定して説明文に追加
+                            </button>
                         </div>
                         
                         <div class="form-group">
                             <label for="diagnosis_details">診断詳細・所見</label>
-                            <textarea id="diagnosis_details" name="diagnosis_details" maxlength="1000" placeholder="診断の詳細や所見を記入してください" rows="4"></textarea>
+                            <textarea id="diagnosis_details" name="diagnosis_details" maxlength="1000" placeholder="診断の詳細や所見を記入してください" rows="1" class="auto-expand"></textarea>
                             <div class="char-counter" id="diagnosis_details-counter">0/1000</div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="treatment_plan">治療方針・計画 <span class="required">*</span></label>
-                            <textarea id="treatment_plan" name="treatment_plan" required maxlength="1000" placeholder="治療方針や計画を記入してください" rows="4"></textarea>
-                            <div class="char-counter" id="treatment_plan-counter">0/1000</div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="follow_up">フォローアップ予定</label>
-                            <textarea id="follow_up" name="follow_up" maxlength="500" placeholder="次回の診察予定やフォローアップ内容を記入してください" rows="3"></textarea>
-                            <div class="char-counter" id="follow_up-counter">0/500</div>
                         </div>
                     </div>
 
-                    <!-- 右カラム: 処方薬 -->
-                    <div class="form-section">
-                        <h3>3. 処方薬</h3>
+                    <!-- 処方薬セクション -->
+                    <div class="form-section" id="section-medication">
+                        <h3>2. 処方薬</h3>
+                        
+                        <!-- サマリー表示（折りたたみ時） -->
+                        <div class="section-summary summary" id="summary-medication" onclick="expandSection('medication')">
+                            <span class="expand-icon">▼ 展開</span>
+                            <div id="summary-medication-text"></div>
+                        </div>
+                        
+                        <!-- プリセット薬剤セット -->
+                        <div class="form-group">
+                            <label>よく使う処方セット:</label>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                                <button type="button" class="btn btn-preset" onclick="applyPreset('cold')">🤧 風邪セット</button>
+                                <button type="button" class="btn btn-preset" onclick="applyPreset('flu')">🤒 インフルセット</button>
+                                <button type="button" class="btn btn-preset" onclick="applyPreset('gastro')">🤢 胃腸炎セット</button>
+                                <button type="button" class="btn btn-preset" onclick="applyPreset('allergy')">🤧 アレルギーセット</button>
+                            </div>
+                        </div>
                         
                         <!-- 薬剤組み合わせ管理エリア -->
                         <div class="form-group">
@@ -432,31 +648,48 @@
                         
                         <div class="form-group">
                             <label for="medication">処方薬・治療 <span class="required">*</span></label>
-                            <small style="color: #666; display: block; margin-bottom: 8px;">
+                            <small style="color: #000; display: block; margin-bottom: 8px; font-weight: 500;">
                                 💡 上記の薬剤組み合わせで自動入力されます。タグにない薬剤や詳細も直接追記できます。
                             </small>
                             <input type="text" id="medication" name="medication" required maxlength="500" placeholder="例: カロナール 500mg 1日3回 3日分 食後、ムコダイン 500mg 1日3回 3日分 食後">
                             <div class="char-counter" id="medication-counter">0/500</div>
+                            <button type="button" class="btn btn-secondary btn-confirm" id="confirm-medication-btn" onclick="confirmMedication()" style="margin-top: 10px;">
+                                ✓ 処方薬を確定して説明文に追加
+                            </button>
                         </div>
                         
                         <div class="form-group">
                             <label for="medication_instructions">服薬指導・注意事項</label>
-                            <textarea id="medication_instructions" name="medication_instructions" maxlength="1000" placeholder="服薬方法や注意事項を記入してください" rows="6"></textarea>
+                            <textarea id="medication_instructions" name="medication_instructions" maxlength="1000" placeholder="服薬方法や注意事項を記入してください" rows="1" class="auto-expand"></textarea>
                             <div class="char-counter" id="medication_instructions-counter">0/1000</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- 患者向け説明（全幅） -->
+                <!-- 治療計画・患者向け説明（全幅） -->
                 <div class="form-section full-width-section">
-                    <h3>4. 患者向け説明</h3>
+                    <h3>3. 治療計画・患者向け説明</h3>
+                    
+                    <div class="form-group">
+                        <label for="treatment_plan">治療方針・計画 <span class="required">*</span></label>
+                        <textarea id="treatment_plan" name="treatment_plan" required maxlength="1000" placeholder="治療方針や計画を記入してください" rows="1" class="auto-expand"></textarea>
+                        <div class="char-counter" id="treatment_plan-counter">0/1000</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="follow_up">フォローアップ予定</label>
+                        <textarea id="follow_up" name="follow_up" maxlength="500" placeholder="次回の診察予定やフォローアップ内容を記入してください" rows="1" class="auto-expand"></textarea>
+                        <div class="char-counter" id="follow_up-counter">0/500</div>
+                    </div>
+                    
+                    <hr style="border: none; border-top: 1px dashed #ccc; margin: 20px 0;">
                     
                     <div class="form-group">
                         <label for="patient_explanation">患者向け説明文 <span class="required">*</span></label>
-                        <small style="color: #666; display: block; margin-bottom: 8px;">
-                            💡 患者が理解しやすい平易な言葉で、診断内容と治療方針を説明してください。
+                        <small style="color: #000; display: block; margin-bottom: 8px; font-weight: 500;">
+                            💡 各セクションの「確定」ボタンを押すと、段階的に説明文が追加されます。必要に応じて編集してください。
                         </small>
-                        <textarea id="patient_explanation" name="patient_explanation" required maxlength="1500" placeholder="例: 今回の症状は風邪によるものと考えられます。ウイルス感染が原因で、熱や咳、鼻水などの症状が出ています。処方するお薬で症状を和らげながら、十分な休養をとっていただければ、3-5日程度で回復する見込みです。" rows="4"></textarea>
+                        <textarea id="patient_explanation" name="patient_explanation" required maxlength="1500" placeholder="症状・診断・処方薬の「確定」ボタンを押すと、自動的に説明文が生成されます。" rows="1" class="auto-expand"></textarea>
                         <div class="char-counter" id="patient_explanation-counter">0/1500</div>
                     </div>
                 </div>
@@ -621,6 +854,20 @@
         let medicationCombinations = [];
         let medicationCombinationCounter = 0;
         
+        // 薬剤のデフォルト設定（よく使う用量・頻度）
+        const medicationDefaults = {
+            'カロナール': { dosage: '500mg', frequency: '1日3回', duration: '3日分', timing: '食後' },
+            'ロキソニン': { dosage: '60mg', frequency: '1日3回', duration: '3日分', timing: '食後' },
+            'ムコダイン': { dosage: '500mg', frequency: '1日3回', duration: '5日分', timing: '食後' },
+            'カルボシステイン': { dosage: '500mg', frequency: '1日3回', duration: '5日分', timing: '食後' },
+            'メジコン': { dosage: '15mg', frequency: '1日3回', duration: '5日分', timing: '食後' },
+            'タミフル': { dosage: '75mg', frequency: '1日2回', duration: '5日分', timing: '食後' },
+            'PL配合顆粒': { dosage: '1g', frequency: '1日3回', duration: '3日分', timing: '食後' },
+            'ガスター': { dosage: '20mg', frequency: '1日2回', duration: '7日分', timing: '食後' },
+            'ビオフェルミン': { dosage: '3錠', frequency: '1日3回', duration: '7日分', timing: '食後' },
+            'アレロック': { dosage: '5mg', frequency: '1日2回', duration: '14日分', timing: '食後' },
+        };
+        
         // タグデータを読み込み
         async function loadTags() {
             try {
@@ -629,7 +876,12 @@
                 
                 // カテゴリ別にタグを整理
                 allTags = {
-                    '症状': [],
+                    '症状-風邪': [],
+                    '症状-痛み': [],
+                    '症状-消化器': [],
+                    '症状-全身': [],
+                    '症状-循環器': [],
+                    '症状-その他': [],
                     '薬剤名': [],
                     '用量': [],
                     '頻度': [],
@@ -664,23 +916,82 @@
             
             updateSelectedTagsDisplay();
             updateFormFields();
+            updateConfirmButtonStates(); // ボタンの状態を更新
+        }
+        
+        // 確定ボタンの状態を更新
+        function updateConfirmButtonStates() {
+            console.log('=== ボタン状態更新 ===');
+            
+            // 症状ボタン
+            const symptomBtn = document.getElementById('confirm-symptoms-btn');
+            const symptomTags = selectedTags.filter(t => t.category && t.category.startsWith('症状'));
+            console.log('症状タグ数:', symptomTags.length);
+            if (symptomBtn) {
+                if (symptomTags.length > 0) {
+                    symptomBtn.classList.add('ready');
+                    console.log('  → 症状ボタンを緑色に');
+                } else {
+                    symptomBtn.classList.remove('ready');
+                    console.log('  → 症状ボタンを灰色に');
+                }
+            }
+            
+            // 診断ボタン
+            const diagnosisBtn = document.getElementById('confirm-diagnosis-btn');
+            const diagnosisField = document.getElementById('diagnosis');
+            console.log('診断名:', diagnosisField ? diagnosisField.value : 'null');
+            if (diagnosisBtn && diagnosisField) {
+                if (diagnosisField.value.trim()) {
+                    diagnosisBtn.classList.add('ready');
+                    console.log('  → 診断ボタンを緑色に');
+                } else {
+                    diagnosisBtn.classList.remove('ready');
+                    console.log('  → 診断ボタンを灰色に');
+                }
+            }
+            
+            // 処方薬ボタン
+            const medicationBtn = document.getElementById('confirm-medication-btn');
+            console.log('薬剤組み合わせ数:', medicationCombinations.length);
+            if (medicationBtn) {
+                if (medicationCombinations.length > 0) {
+                    medicationBtn.classList.add('ready');
+                    console.log('  → 処方薬ボタンを緑色に');
+                } else {
+                    medicationBtn.classList.remove('ready');
+                    console.log('  → 処方薬ボタンを灰色に');
+                }
+            }
         }
         
         // 選択されたタグの表示を更新
         function updateSelectedTagsDisplay() {
+            // カテゴリーマッピング
+            const categoryMapping = {
+                '症状-風邪': 'symptom-tags-cold',
+                '症状-痛み': 'symptom-tags-pain',
+                '症状-消化器': 'symptom-tags-gastro',
+                '症状-全身': 'symptom-tags-general',
+                '症状-循環器': 'symptom-tags-cardio',
+                '症状-その他': 'symptom-tags-other'
+            };
+            
+            // 選択中エリアをクリア
+            const selectedContainer = document.getElementById('selected-symptom-tags');
+            if (selectedContainer) {
+                selectedContainer.innerHTML = '';
+            }
+            
             // 各カテゴリごとに処理
-            ['症状'].forEach(category => {
-                const sourceContainerId = 'symptom-tags';
-                const selectedContainerId = 'selected-symptom-tags';
-                
+            Object.keys(categoryMapping).forEach(category => {
+                const sourceContainerId = categoryMapping[category];
                 const sourceContainer = document.getElementById(sourceContainerId);
-                const selectedContainer = document.getElementById(selectedContainerId);
                 
-                if (!sourceContainer || !selectedContainer) return;
+                if (!sourceContainer) return;
                 
                 // 元のエリアをクリア
                 sourceContainer.innerHTML = '';
-                selectedContainer.innerHTML = '';
                 
                 // このカテゴリのすべてのタグを取得
                 const categoryTags = allTags[category] || [];
@@ -709,12 +1020,232 @@
                     }
                 });
             });
+            
+            // ボタンの状態を更新
+            updateConfirmButtonStates();
+        }
+        
+        // カテゴリーの折りたたみ機能
+        function toggleCategory(categoryId) {
+            const toggle = document.getElementById(`toggle-${categoryId}`);
+            const content = document.getElementById(`content-${categoryId}`);
+            
+            if (toggle && content) {
+                toggle.classList.toggle('collapsed');
+                content.classList.toggle('collapsed');
+            }
+        }
+        
+        // 段階的に説明文を追加する関数群
+        function appendToExplanation(text) {
+            const explanationField = document.getElementById('patient_explanation');
+            const currentValue = explanationField.value;
+            
+            if (currentValue) {
+                explanationField.value = currentValue + '\n\n' + text;
+            } else {
+                explanationField.value = text;
+            }
+            
+            // 高さを調整
+            explanationField.dispatchEvent(new Event('input'));
+        }
+        
+        // セクションを折りたたむ
+        function minimizeSection(sectionId, summaryText) {
+            const section = document.getElementById(`section-${sectionId}`);
+            const summaryElement = document.getElementById(`summary-${sectionId}-text`);
+            
+            if (section && summaryElement) {
+                section.classList.add('minimized');
+                summaryElement.textContent = summaryText;
+                
+                // 次のセクションにスクロール
+                const nextSection = section.nextElementSibling;
+                if (nextSection) {
+                    nextSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+        
+        // セクションを展開
+        function expandSection(sectionId) {
+            const section = document.getElementById(`section-${sectionId}`);
+            if (section) {
+                section.classList.remove('minimized');
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+        
+        // ステップ1: 症状を確定
+        function confirmSymptoms() {
+            const symptomTags = selectedTags.filter(t => t.category.startsWith('症状'));
+            const symptomNames = symptomTags.map(t => t.tag_name);
+            
+            if (symptomNames.length === 0) {
+                alert('症状タグを選択してください。');
+                return;
+            }
+            
+            const text = `「${symptomNames.join('」「')}」といった症状で受診していただきました。`;
+            
+            // 説明文の1文目として設定（置き換え）
+            const explanationField = document.getElementById('patient_explanation');
+            const lines = explanationField.value.split('\n\n');
+            lines[0] = text;
+            explanationField.value = lines.join('\n\n');
+            
+            explanationField.dispatchEvent(new Event('input'));
+            
+            // セクションを折りたたんで次へ
+            const diagnosisField = document.getElementById('diagnosis');
+            const diagnosis = diagnosisField.value || '（未入力）';
+            minimizeSection('symptoms', `✅ 症状: ${symptomNames.join('、')} / 診断: ${diagnosis}`);
+        }
+        
+        // ステップ2: 診断を確定
+        function confirmDiagnosis() {
+            const diagnosisField = document.getElementById('diagnosis');
+            const diagnosis = diagnosisField.value;
+            
+            if (!diagnosis) {
+                alert('診断名を入力してください。');
+                return;
+            }
+            
+            const text = `これらの症状から「${diagnosis}」と診断いたしました。`;
+            
+            // 説明文の2文目として設定
+            const explanationField = document.getElementById('patient_explanation');
+            const lines = explanationField.value.split('\n\n').filter(line => line.trim());
+            
+            if (lines.length >= 2) {
+                lines[1] = text;
+            } else {
+                lines.push(text);
+            }
+            
+            explanationField.value = lines.join('\n\n');
+            explanationField.dispatchEvent(new Event('input'));
+            
+            // 症状・診断セクションのサマリーを更新して折りたたむ
+            const symptomTags = selectedTags.filter(t => t.category.startsWith('症状'));
+            const symptomNames = symptomTags.map(t => t.tag_name);
+            minimizeSection('symptoms', `✅ 症状: ${symptomNames.join('、')} / 診断: ${diagnosis}`);
+        }
+        
+        // ステップ3: 処方薬を確定
+        function confirmMedication() {
+            const medicationCount = medicationCombinations.length;
+            
+            if (medicationCount === 0) {
+                alert('処方薬を追加してください。');
+                return;
+            }
+            
+            let maxDuration = 0;
+            medicationCombinations.forEach(med => {
+                if (med.duration) {
+                    const match = med.duration.match(/(\d+)日分/);
+                    if (match) {
+                        maxDuration = Math.max(maxDuration, parseInt(match[1]));
+                    }
+                }
+            });
+            
+            const text = `処方薬は${medicationCount}種類を${maxDuration > 0 ? maxDuration : 'ー'}日分お出しします。\n\n症状が治まらない場合や悪化する場合は、お早めに再受診してください。\n\nお大事になさってください。`;
+            
+            // 説明文の3文目以降として設定
+            const explanationField = document.getElementById('patient_explanation');
+            const lines = explanationField.value.split('\n\n').filter(line => line.trim());
+            
+            // 3文目以降を置き換え
+            lines[2] = text.split('\n\n')[0];
+            lines[3] = text.split('\n\n')[1];
+            lines[4] = text.split('\n\n')[2];
+            
+            explanationField.value = lines.join('\n\n');
+            explanationField.dispatchEvent(new Event('input'));
+            
+            // セクションを折りたたんで次へ
+            const medicationField = document.getElementById('medication');
+            const medicationSummary = medicationField.value.substring(0, 50) + (medicationField.value.length > 50 ? '...' : '');
+            minimizeSection('medication', `✅ 処方: ${medicationSummary}`);
+        }
+        
+        // 症状プリセットを適用
+        function applySymptomPreset(presetType) {
+            const presets = {
+                'cold': ['発熱', '咳', '鼻水', 'のどの痛み'],
+                'flu': ['発熱', '悪寒', '頭痛', '筋肉痛', 'だるさ'],
+                'gastro': ['腹痛', '下痢', '吐き気', '嘔吐']
+            };
+            
+            const symptomNames = presets[presetType];
+            if (symptomNames) {
+                // 既存の症状選択をクリア
+                selectedTags = selectedTags.filter(t => !t.category.startsWith('症状'));
+                
+                // プリセットの症状を選択
+                Object.keys(allTags).forEach(category => {
+                    if (category.startsWith('症状')) {
+                        allTags[category].forEach(tag => {
+                            if (symptomNames.includes(tag.tag_name) && !selectedTags.some(t => t.tag_id === tag.tag_id)) {
+                                selectedTags.push(tag);
+                            }
+                        });
+                    }
+                });
+                
+                updateSelectedTagsDisplay();
+                updateFormFields();
+                updateConfirmButtonStates(); // ボタンの状態を更新
+            }
         }
         
         // フォームフィールドを更新（タグ選択に基づいて自動入力）
         function updateFormFields() {
             // 症状タグは選択するだけで、詳細フィールドには自動入力しない
             // 医師が手動で詳細を記入する
+        }
+        
+        // 案2: プリセット処方セットを適用
+        function applyPreset(presetType) {
+            medicationCombinations = []; // 既存をクリア
+            medicationCombinationCounter = 0;
+            
+            const presets = {
+                'cold': [
+                    { name: 'カロナール', dosage: '500mg', frequency: '1日3回', duration: '3日分', timing: '食後' },
+                    { name: 'PL配合顆粒', dosage: '1g', frequency: '1日3回', duration: '3日分', timing: '食後' },
+                    { name: 'ムコダイン', dosage: '500mg', frequency: '1日3回', duration: '5日分', timing: '食後' }
+                ],
+                'flu': [
+                    { name: 'タミフル', dosage: '75mg', frequency: '1日2回', duration: '5日分', timing: '食後' },
+                    { name: 'カロナール', dosage: '500mg', frequency: '1日3回', duration: '3日分', timing: '食後' }
+                ],
+                'gastro': [
+                    { name: 'ナウゼリン', dosage: '10mg', frequency: '1日3回', duration: '3日分', timing: '食前' },
+                    { name: 'ビオフェルミン', dosage: '3錠', frequency: '1日3回', duration: '7日分', timing: '食後' }
+                ],
+                'allergy': [
+                    { name: 'アレロック', dosage: '5mg', frequency: '1日2回', duration: '14日分', timing: '食後' }
+                ]
+            };
+            
+            const preset = presets[presetType];
+            if (preset) {
+                preset.forEach(med => {
+                    const combinationId = `medication-${medicationCombinationCounter++}`;
+                    medicationCombinations.push({
+                        id: combinationId,
+                        ...med
+                    });
+                });
+                renderMedicationCombinations();
+                updateMedicationField();
+                updateConfirmButtonStates(); // ボタンの状態を更新
+            }
         }
         
         // 薬剤組み合わせ管理関数
@@ -731,18 +1262,33 @@
             
             medicationCombinations.push(combination);
             renderMedicationCombinations();
+            updateConfirmButtonStates(); // ボタンの状態を更新
         }
         
         function removeMedicationCombination(combinationId) {
             medicationCombinations = medicationCombinations.filter(c => c.id !== combinationId);
             renderMedicationCombinations();
             updateMedicationField();
+            updateConfirmButtonStates(); // ボタンの状態を更新
         }
         
         function updateMedicationCombination(combinationId, field, value) {
             const combination = medicationCombinations.find(c => c.id === combinationId);
             if (combination) {
                 combination[field] = value;
+                
+                // 案3: 薬剤名を選んだら、デフォルト値を自動入力
+                if (field === 'name' && value && medicationDefaults[value]) {
+                    const defaults = medicationDefaults[value];
+                    combination.dosage = defaults.dosage;
+                    combination.frequency = defaults.frequency;
+                    combination.duration = defaults.duration;
+                    combination.timing = defaults.timing;
+                    // 再レンダリングして選択状態を反映
+                    renderMedicationCombinations();
+                    return;
+                }
+                
                 updateMedicationCombinationPreview(combinationId);
                 updateMedicationField();
             }
@@ -857,11 +1403,50 @@
         }
         
         // ページ読み込み時にタグを読み込み
+        // テキストエリアの自動拡張機能
+        function setupAutoExpandTextarea(textarea) {
+            if (!textarea) return;
+            
+            function adjustHeight() {
+                // 一旦高さをリセット
+                textarea.style.height = 'auto';
+                // スクロール高さに基づいて新しい高さを設定
+                const newHeight = Math.max(40, textarea.scrollHeight);
+                textarea.style.height = newHeight + 'px';
+            }
+            
+            textarea.addEventListener('input', adjustHeight);
+            textarea.addEventListener('change', adjustHeight);
+            // キーボードイベントでも調整
+            textarea.addEventListener('keydown', function(e) {
+                setTimeout(adjustHeight, 0);
+            });
+            // 初期化時にも実行
+            setTimeout(adjustHeight, 0);
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             loadTags();
             
+            // デフォルトでは薬剤を表示しない（空の状態から始める）
+            renderMedicationCombinations();
+            
             // 薬剤追加ボタンのイベントリスナー
             document.getElementById('add-medication-btn').addEventListener('click', addMedicationCombination);
+            
+            // 診断フィールドの入力監視
+            const diagnosisField = document.getElementById('diagnosis');
+            if (diagnosisField) {
+                diagnosisField.addEventListener('input', updateConfirmButtonStates);
+            }
+            
+            // 自動拡張テキストエリアの設定
+            document.querySelectorAll('textarea.auto-expand').forEach(textarea => {
+                setupAutoExpandTextarea(textarea);
+            });
+            
+            // 初期状態のボタン更新
+            updateConfirmButtonStates();
         });
     </script>
 </body>
