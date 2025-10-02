@@ -176,6 +176,18 @@ def patient_detail(patient_id):
 def records_list():
     """診療記録一覧"""
     records = load_records()
+    patients = load_patients()
+    
+    # 患者情報を診療記録に追加
+    for record in records:
+        patient = next((p for p in patients if p['patient_id'] == record['patient_id']), None)
+        if patient:
+            record['patient_name'] = patient['name']
+            record['patient_name_kana'] = patient['name_kana']
+        else:
+            record['patient_name'] = '不明'
+            record['patient_name_kana'] = 'フメイ'
+    
     records.sort(key=lambda x: x['date'], reverse=True)
     return render_template('records.html', records=records)
 
@@ -430,17 +442,29 @@ def import_record():
         new_record_id = f"REC{len(records) + 1:03d}"
         
         # 診療記録を作成
+        # 受信した日時がUTCの場合は日本時間に変換
+        received_date = data['date']
+        if received_date.endswith('Z'):
+            # UTC時刻を日本時間に変換
+            from datetime import datetime, timezone, timedelta
+            utc_time = datetime.fromisoformat(received_date.replace('Z', '+00:00'))
+            jst_time = utc_time.astimezone(timezone(timedelta(hours=9)))
+            display_date = jst_time.isoformat()
+        else:
+            display_date = received_date
+        
         new_record = {
             'record_id': new_record_id,
             'patient_id': data['patient_id'],
-            'date': data['date'],
+            'date': display_date,
             'doctor': data['doctor'],
             'department': data.get('department', '内科'),
             'chief_complaint': data.get('chief_complaint', ''),
             'diagnosis': data['diagnosis'],
             'treatment': data.get('treatment', ''),
             'notes': data.get('notes', ''),
-            'status': data.get('status', '完了')
+            'status': data.get('status', '完了'),
+            'doctor_notes': data.get('doctor_notes', '')
         }
         
         # レコードを追加
