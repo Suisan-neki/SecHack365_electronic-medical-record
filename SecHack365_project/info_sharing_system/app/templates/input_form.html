@@ -661,7 +661,7 @@
                             <small style="color: #000; display: block; margin-bottom: 8px; font-weight: 500;">
                                 💡 上記の薬剤組み合わせで自動入力されます。タグにない薬剤や詳細も直接追記できます。
                             </small>
-                            <input type="text" id="medication" name="medication" placeholder="例: カロナール 500mg 1日3回 3日分 食後、ムコダイン 500mg 1日3回 3日分 食後">
+                            <textarea id="medication" name="medication" placeholder="例: カロナール 500mg 1日3回 3日分 食後&#10;ムコダイン 500mg 1日3回 3日分 食後" rows="3" class="auto-expand"></textarea>
                             <div class="char-counter" id="medication-counter">0文字</div>
                             <button type="button" class="btn btn-secondary btn-confirm" id="confirm-medication-btn" onclick="confirmMedication()" style="margin-top: 10px;">
                                 ✓ 処方薬を確定して説明文に追加
@@ -841,6 +841,9 @@
             };
             
             console.log('模擬電子カルテに送信するデータ:', recordData);
+            console.log('症状フィールドの値:', data.symptoms);
+            console.log('診断フィールドの値:', data.diagnosis);
+            console.log('処方薬フィールドの値:', data.medication);
             
             // 模擬電子カルテに送信
             fetch('/api/dummy-ehr/record', {
@@ -1618,6 +1621,11 @@
                 notes: data.patient_explanation || '',
                 doctor_notes: data.doctor_notes || ''
             };
+            
+            console.log('送信するデータ:', recordData);
+            console.log('症状フィールドの値:', data.symptoms);
+            console.log('診断フィールドの値:', data.diagnosis);
+            console.log('処方薬フィールドの値:', data.medication);
             
             try {
                 const response = await fetch('/api/dummy-ehr/record', {
