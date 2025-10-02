@@ -488,15 +488,15 @@
             <form id="medical-record-form">
                 <!-- 3カラムレイアウト -->
                 <div class="three-column-layout">
-                    <!-- 症状・診断セクション -->
-                    <div class="form-section" id="section-symptoms">
-                        <h3>1. 症状・診断</h3>
-                        
-                        <!-- サマリー表示（折りたたみ時） -->
-                        <div class="section-summary summary" id="summary-symptoms" onclick="expandSection('symptoms')">
-                            <span class="expand-icon">▼ 展開</span>
-                            <div id="summary-symptoms-text"></div>
-                        </div>
+                <!-- 症状セクション -->
+                <div class="form-section" id="section-symptoms">
+                    <h3>1. 症状</h3>
+                    
+                    <!-- サマリー表示（折りたたみ時） -->
+                    <div class="section-summary summary" id="summary-symptoms" onclick="expandSection('symptoms')">
+                        <span class="expand-icon">▼ 展開</span>
+                        <div id="summary-symptoms-text"></div>
+                    </div>
                         
                         <!-- 症状プリセット -->
                         <div class="form-group">
@@ -585,23 +585,33 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="symptoms">症状の詳細 <span class="required">*</span></label>
+                            <label for="symptoms">症状の詳細</label>
                             <small style="color: #000; display: block; margin-bottom: 8px; font-weight: 500;">
                                 💡 選択したタグをもとに、症状の詳細（いつから、程度、経過など）を記入してください。タグにない症状も自由に追記できます。
                             </small>
-                            <textarea id="symptoms" name="symptoms" required maxlength="500" placeholder="例: 発熱（選択したタグ）→ 3日前から38.5度の発熱が続いている。解熱剤で一時的に下がるが再び上昇。頭痛（選択したタグ）→ 前頭部を中心に脈打つような痛み。" rows="1" class="auto-expand"></textarea>
-                            <div class="char-counter" id="symptoms-counter">0/500</div>
+                            <textarea id="symptoms" name="symptoms" placeholder="例: 発熱（選択したタグ）→ 3日前から38.5度の発熱が続いている。解熱剤で一時的に下がるが再び上昇。頭痛（選択したタグ）→ 前頭部を中心に脈打つような痛み。" rows="1" class="auto-expand"></textarea>
+                            <div class="char-counter" id="symptoms-counter">0文字</div>
                         </div>
                         
-                        <hr style="border: none; border-top: 1px dashed #ccc; margin: 20px 0;">
+                    </div>
+
+                    <!-- 診断セクション -->
+                    <div class="form-section" id="section-diagnosis">
+                        <h3>2. 診断</h3>
+                        
+                        <!-- サマリー表示（折りたたみ時） -->
+                        <div class="section-summary summary" id="summary-diagnosis" onclick="expandSection('diagnosis')">
+                            <span class="expand-icon">▼ 展開</span>
+                            <div id="summary-diagnosis-text"></div>
+                        </div>
                         
                         <div class="form-group">
-                            <label for="diagnosis">診断名 <span class="required">*</span></label>
+                            <label for="diagnosis">診断名</label>
                             <small style="color: #000; display: block; margin-bottom: 8px; font-weight: 500;">
                                 💡 正式な診断名を自由に入力してください（ICD-10コードも記載可能）。
                             </small>
-                            <input type="text" id="diagnosis" name="diagnosis" required maxlength="200" placeholder="例: 急性上気道炎、インフルエンザ（A型）、急性胃腸炎など">
-                            <div class="char-counter" id="diagnosis-counter">0/200</div>
+                            <input type="text" id="diagnosis" name="diagnosis" placeholder="例: 急性上気道炎、インフルエンザ（A型）、急性胃腸炎など">
+                            <div class="char-counter" id="diagnosis-counter">0文字</div>
                             <button type="button" class="btn btn-secondary btn-confirm" id="confirm-diagnosis-btn" onclick="confirmDiagnosis()" style="margin-top: 10px;">
                                 ✓ 診断を確定して説明文に追加
                             </button>
@@ -609,14 +619,14 @@
                         
                         <div class="form-group">
                             <label for="diagnosis_details">診断詳細・所見</label>
-                            <textarea id="diagnosis_details" name="diagnosis_details" maxlength="1000" placeholder="診断の詳細や所見を記入してください" rows="1" class="auto-expand"></textarea>
-                            <div class="char-counter" id="diagnosis_details-counter">0/1000</div>
+                            <textarea id="diagnosis_details" name="diagnosis_details" placeholder="診断の詳細や所見を記入してください" rows="1" class="auto-expand"></textarea>
+                            <div class="char-counter" id="diagnosis_details-counter">0文字</div>
                         </div>
                     </div>
 
                     <!-- 処方薬セクション -->
                     <div class="form-section" id="section-medication">
-                        <h3>2. 処方薬</h3>
+                        <h3>3. 処方薬</h3>
                         
                         <!-- サマリー表示（折りたたみ時） -->
                         <div class="section-summary summary" id="summary-medication" onclick="expandSection('medication')">
@@ -647,12 +657,12 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="medication">処方薬・治療 <span class="required">*</span></label>
+                            <label for="medication">処方薬・治療</label>
                             <small style="color: #000; display: block; margin-bottom: 8px; font-weight: 500;">
                                 💡 上記の薬剤組み合わせで自動入力されます。タグにない薬剤や詳細も直接追記できます。
                             </small>
-                            <input type="text" id="medication" name="medication" required maxlength="500" placeholder="例: カロナール 500mg 1日3回 3日分 食後、ムコダイン 500mg 1日3回 3日分 食後">
-                            <div class="char-counter" id="medication-counter">0/500</div>
+                            <input type="text" id="medication" name="medication" placeholder="例: カロナール 500mg 1日3回 3日分 食後、ムコダイン 500mg 1日3回 3日分 食後">
+                            <div class="char-counter" id="medication-counter">0文字</div>
                             <button type="button" class="btn btn-secondary btn-confirm" id="confirm-medication-btn" onclick="confirmMedication()" style="margin-top: 10px;">
                                 ✓ 処方薬を確定して説明文に追加
                             </button>
@@ -660,37 +670,48 @@
                         
                         <div class="form-group">
                             <label for="medication_instructions">服薬指導・注意事項</label>
-                            <textarea id="medication_instructions" name="medication_instructions" maxlength="1000" placeholder="服薬方法や注意事項を記入してください" rows="1" class="auto-expand"></textarea>
-                            <div class="char-counter" id="medication_instructions-counter">0/1000</div>
+                            <textarea id="medication_instructions" name="medication_instructions" placeholder="服薬方法や注意事項を記入してください" rows="1" class="auto-expand"></textarea>
+                            <div class="char-counter" id="medication_instructions-counter">0文字</div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- 治療計画・患者向け説明（全幅） -->
                 <div class="form-section full-width-section">
-                    <h3>3. 治療計画・患者向け説明</h3>
+                    <h3>4. 治療計画・患者向け説明</h3>
                     
                     <div class="form-group">
-                        <label for="treatment_plan">治療方針・計画 <span class="required">*</span></label>
-                        <textarea id="treatment_plan" name="treatment_plan" required maxlength="1000" placeholder="治療方針や計画を記入してください" rows="1" class="auto-expand"></textarea>
-                        <div class="char-counter" id="treatment_plan-counter">0/1000</div>
+                        <label for="treatment_plan">治療方針・計画</label>
+                        <textarea id="treatment_plan" name="treatment_plan" placeholder="治療方針や計画を記入してください" rows="1" class="auto-expand"></textarea>
+                        <div class="char-counter" id="treatment_plan-counter">0文字</div>
                     </div>
                     
                     <div class="form-group">
                         <label for="follow_up">フォローアップ予定</label>
-                        <textarea id="follow_up" name="follow_up" maxlength="500" placeholder="次回の診察予定やフォローアップ内容を記入してください" rows="1" class="auto-expand"></textarea>
-                        <div class="char-counter" id="follow_up-counter">0/500</div>
+                        <textarea id="follow_up" name="follow_up" placeholder="次回の診察予定やフォローアップ内容を記入してください" rows="1" class="auto-expand"></textarea>
+                        <div class="char-counter" id="follow_up-counter">0文字</div>
                     </div>
                     
                     <hr style="border: none; border-top: 1px dashed #ccc; margin: 20px 0;">
                     
                     <div class="form-group">
-                        <label for="patient_explanation">患者向け説明文 <span class="required">*</span></label>
+                        <label for="patient_explanation">患者向け説明文</label>
                         <small style="color: #000; display: block; margin-bottom: 8px; font-weight: 500;">
                             💡 各セクションの「確定」ボタンを押すと、段階的に説明文が追加されます。必要に応じて編集してください。
                         </small>
-                        <textarea id="patient_explanation" name="patient_explanation" required maxlength="1500" placeholder="症状・診断・処方薬の「確定」ボタンを押すと、自動的に説明文が生成されます。" rows="1" class="auto-expand"></textarea>
-                        <div class="char-counter" id="patient_explanation-counter">0/1500</div>
+                        <textarea id="patient_explanation" name="patient_explanation" placeholder="症状・診断・処方薬の「確定」ボタンを押すと、自動的に説明文が生成されます。" rows="1" class="auto-expand"></textarea>
+                        <div class="char-counter" id="patient_explanation-counter">0文字</div>
+                    </div>
+                    
+                    <hr style="border: none; border-top: 1px dashed #ccc; margin: 20px 0;">
+                    
+                    <div class="form-group">
+                        <label for="doctor_notes">医師メモ（患者には表示されません）</label>
+                        <small style="color: #666; display: block; margin-bottom: 8px; font-weight: 500;">
+                            💡 電子カルテにのみ記録される医師向けのメモです。患者には表示されません。
+                        </small>
+                        <textarea id="doctor_notes" name="doctor_notes" placeholder="診療時の所見、今後の注意点、他の医師への連絡事項などを記入してください" rows="3" class="auto-expand"></textarea>
+                        <div class="char-counter" id="doctor_notes-counter">0文字</div>
                     </div>
                 </div>
                 
@@ -716,34 +737,29 @@
     
     <script>
         // 文字数カウンター機能
-        function setupCharCounter(inputId, counterId, maxLength) {
+        function setupCharCounter(inputId, counterId) {
             const input = document.getElementById(inputId);
             const counter = document.getElementById(counterId);
             
             input.addEventListener('input', function() {
                 const length = this.value.length;
-                counter.textContent = `${length}/${maxLength}`;
+                counter.textContent = `${length}文字`;
                 
-                // 文字数に応じて色を変更
+                // 文字数カウンターの色は常に通常色
                 counter.className = 'char-counter';
-                if (length > maxLength * 0.9) {
-                    counter.className += ' warning';
-                }
-                if (length > maxLength) {
-                    counter.className += ' error';
-                }
             });
         }
         
-        // 各フィールドの文字数カウンターを設定
-        setupCharCounter('symptoms', 'symptoms-counter', 500);
-        setupCharCounter('diagnosis', 'diagnosis-counter', 200);
-        setupCharCounter('diagnosis_details', 'diagnosis_details-counter', 1000);
-        setupCharCounter('medication', 'medication-counter', 500);
-        setupCharCounter('medication_instructions', 'medication_instructions-counter', 1000);
-        setupCharCounter('treatment_plan', 'treatment_plan-counter', 1000);
-        setupCharCounter('follow_up', 'follow_up-counter', 500);
-        setupCharCounter('patient_explanation', 'patient_explanation-counter', 1500);
+        // 各フィールドの文字数カウンターを設定（制限なし）
+        setupCharCounter('symptoms', 'symptoms-counter');
+        setupCharCounter('diagnosis', 'diagnosis-counter');
+        setupCharCounter('diagnosis_details', 'diagnosis_details-counter');
+        setupCharCounter('medication', 'medication-counter');
+        setupCharCounter('doctor_notes', 'doctor_notes-counter');
+        setupCharCounter('medication_instructions', 'medication_instructions-counter');
+        setupCharCounter('treatment_plan', 'treatment_plan-counter');
+        setupCharCounter('follow_up', 'follow_up-counter');
+        setupCharCounter('patient_explanation', 'patient_explanation-counter');
         
         // プレビュー機能
         document.getElementById('preview-btn').addEventListener('click', function() {
@@ -774,18 +790,9 @@
             document.getElementById('preview-section').style.display = 'block';
         });
         
-        // フォーム送信処理（電子カルテに入力）
-        const submitBtn = document.getElementById('submit-btn');
-        if (submitBtn) {
-            // 既存のイベントリスナーを削除
-            submitBtn.removeEventListener('click', handleSubmitClick);
-            
-            // 新しいイベントリスナーを追加
-            submitBtn.addEventListener('click', handleSubmitClick);
-        }
+        // フォーム送信処理（電子カルテに入力）はDOMContentLoaded内で処理
         
         function handleSubmitClick() {
-            alert('電子カルテに入力するボタンがクリックされました！');
             console.log('電子カルテに入力するボタンがクリックされました');
             
             const form = document.getElementById('medical-record-form');
@@ -794,13 +801,13 @@
             
             console.log('フォームデータ:', data);
             
-            // 必須フィールドの検証（テスト用に緩和）
-            const requiredFields = ['symptoms', 'diagnosis', 'medication'];
-            const missingFields = requiredFields.filter(field => !data[field]);
+            // 最低限の入力チェック（症状または診断のいずれかは入力されているか）
+            const hasSymptoms = data.symptoms && data.symptoms.trim();
+            const hasDiagnosis = data.diagnosis && data.diagnosis.trim();
             
-            if (missingFields.length > 0) {
-                console.log('必須フィールドが不足:', missingFields);
-                showError(`必須フィールドが入力されていません: ${missingFields.join(', ')}`);
+            if (!hasSymptoms && !hasDiagnosis) {
+                console.log('最低限の入力が不足: 症状または診断のいずれかは入力してください');
+                showError('症状または診断のいずれかは入力してください');
                 return;
             }
             
@@ -813,30 +820,56 @@
             // 患者用端末を起動
             startPatientDisplay(data);
             
-            // データ送信
-            fetch('/api/input_medical_record', {
+            // 診療記録を模擬電子カルテに直接送信
+            const currentPatientId = sessionStorage.getItem('currentPatientId') || 'P001';
+            
+            // 日本時間（JST）でタイムスタンプを生成
+            const now = new Date();
+            const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+            const jstISOString = jstTime.toISOString();
+            
+            const recordData = {
+                patient_id: currentPatientId,
+                date: jstISOString,
+                doctor: '医師',
+                department: '内科',
+                chief_complaint: data.symptoms || '',
+                diagnosis: data.diagnosis || '',
+                treatment: data.medication || '',
+                notes: data.patient_explanation || '',
+                doctor_notes: data.doctor_notes || ''
+            };
+            
+            console.log('模擬電子カルテに送信するデータ:', recordData);
+            
+            // 模擬電子カルテに送信
+            fetch('/api/dummy-ehr/record', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(recordData)
             })
             .then(response => response.json())
             .then(result => {
-                console.log('API応答:', result);
+                console.log('模擬電子カルテ送信結果:', result);
                 showLoading(false);
+                
                 if (result.success) {
-                    showSuccess('医療記録が正常に保存されました。患者用端末に表示中です。');
-                    // 模擬カルテ送信ボタンを表示
-                    showSendToEhrButton();
+                    showSuccess('✅ 診療記録を模擬電子カルテに送信しました！');
+                    
+                    // 3秒後にダッシュボードに戻る
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 3000);
                 } else {
-                    showError(result.error || '医療記録の保存に失敗しました。');
+                    showError('❌ 模擬電子カルテへの送信に失敗しました: ' + result.error);
                 }
             })
             .catch(error => {
-                console.error('API送信エラー:', error);
+                console.error('模擬電子カルテ送信エラー:', error);
                 showLoading(false);
-                showError('通信エラーが発生しました: ' + error.message);
+                showError('❌ 通信エラーが発生しました: ' + error.message);
             });
         }
         
@@ -1162,10 +1195,8 @@
             
             explanationField.dispatchEvent(new Event('input'));
             
-            // セクションを折りたたんで次へ
-            const diagnosisField = document.getElementById('diagnosis');
-            const diagnosis = diagnosisField.value || '（未入力）';
-            minimizeSection('symptoms', `✅ 症状: ${symptomNames.join('、')} / 診断: ${diagnosis}`);
+            // 症状セクションを折りたたむ
+            minimizeSection('symptoms', `✅ 症状: ${symptomNames.join('、')}`);
         }
         
         // ステップ2: 診断を確定
@@ -1193,10 +1224,8 @@
             explanationField.value = lines.join('\n\n');
             explanationField.dispatchEvent(new Event('input'));
             
-            // 症状・診断セクションのサマリーを更新して折りたたむ
-            const symptomTags = selectedTags.filter(t => t.category.startsWith('症状'));
-            const symptomNames = symptomTags.map(t => t.tag_name);
-            minimizeSection('symptoms', `✅ 症状: ${symptomNames.join('、')} / 診断: ${diagnosis}`);
+            // 診断セクションを折りたたむ
+            minimizeSection('diagnosis', `✅ 診断: ${diagnosis}`);
         }
         
         // ステップ3: 処方薬を確定
@@ -1224,10 +1253,11 @@
             const explanationField = document.getElementById('patient_explanation');
             const lines = explanationField.value.split('\n\n').filter(line => line.trim());
             
-            // 3文目以降を置き換え
-            lines[2] = text.split('\n\n')[0];
-            lines[3] = text.split('\n\n')[1];
-            lines[4] = text.split('\n\n')[2];
+            // 3文目以降を置き換え（1文ごとに1行の空白を挟む）
+            const medicationLines = text.split('\n\n');
+            lines[2] = medicationLines[0];
+            lines[3] = medicationLines[1];
+            lines[4] = medicationLines[2];
             
             explanationField.value = lines.join('\n\n');
             explanationField.dispatchEvent(new Event('input'));
@@ -1518,31 +1548,31 @@
             // 初期状態のボタン更新
             updateConfirmButtonStates();
             
-            // ボタンの状態を確認
+            // 電子カルテ入力ボタンの設定
             const submitBtn = document.getElementById('submit-btn');
             console.log('submit-btn要素:', submitBtn);
             console.log('submit-btnのdisabled状態:', submitBtn.disabled);
             console.log('submit-btnのclassList:', submitBtn.classList);
             
-            // ボタンがクリック可能かテスト
             if (submitBtn) {
+                // 既存のイベントリスナーをすべて削除
+                submitBtn.replaceWith(submitBtn.cloneNode(true));
+                const newSubmitBtn = document.getElementById('submit-btn');
+                
                 // ボタンを強制的に有効化
-                submitBtn.disabled = false;
-                submitBtn.style.pointerEvents = 'auto';
-                submitBtn.style.opacity = '1';
-                submitBtn.style.cursor = 'pointer';
+                newSubmitBtn.disabled = false;
+                newSubmitBtn.style.pointerEvents = 'auto';
+                newSubmitBtn.style.opacity = '1';
+                newSubmitBtn.style.cursor = 'pointer';
+                
+                // イベントリスナーを追加
+                newSubmitBtn.addEventListener('click', handleSubmitClick);
                 
                 // ボタンの状態をログ出力
                 console.log('ボタン状態:', {
-                    disabled: submitBtn.disabled,
-                    style: submitBtn.style.cssText,
-                    classList: submitBtn.classList.toString()
-                });
-                
-                // クリックテスト用のイベントリスナー
-                submitBtn.addEventListener('click', function(e) {
-                    console.log('テスト用ボタンクリック:', e);
-                    alert('テスト用ボタンがクリックされました！');
+                    disabled: newSubmitBtn.disabled,
+                    style: newSubmitBtn.style.cssText,
+                    classList: newSubmitBtn.classList.toString()
                 });
             }
             
@@ -1571,16 +1601,22 @@
             // 現在の患者IDを取得（セッションから）
             const currentPatientId = sessionStorage.getItem('currentPatientId') || 'P001';
             
+            // 日本時間（JST）でタイムスタンプを生成
+            const now = new Date();
+            const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+            const jstISOString = jstTime.toISOString();
+            
             // 診療記録データを準備
             const recordData = {
                 patient_id: currentPatientId,
-                date: new Date().toISOString(),
+                date: jstISOString,
                 doctor: '医師',
                 department: '内科',
                 chief_complaint: data.symptoms || '',
                 diagnosis: data.diagnosis || '',
                 treatment: data.medication || '',
-                notes: data.patient_explanation || ''
+                notes: data.patient_explanation || '',
+                doctor_notes: data.doctor_notes || ''
             };
             
             try {
@@ -1631,7 +1667,7 @@
                 if (result.success) {
                     console.log('患者用端末にデータを送信しました');
                     // 患者用端末のURLを新しいタブで開く
-                    const patientUrl = `/patient_display?patient_id=${sessionStorage.getItem('currentPatientId') || 'P001'}`;
+                    const patientUrl = `/patient-display`;
                     window.open(patientUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
                 } else {
                     console.error('患者用端末への送信に失敗しました:', result.error);

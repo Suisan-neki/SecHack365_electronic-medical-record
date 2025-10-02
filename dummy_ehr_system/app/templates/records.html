@@ -83,8 +83,8 @@
         {% for record in records %}
         <div class="record-card">
             <div class="record-header">
-                <span class="record-id">{{ record.record_id }} - {{ record.patient_id }}</span>
-                <span class="record-date">{{ record.date }}</span>
+                <span class="record-id">{{ record.record_id }} - {{ record.patient_name }} ({{ record.patient_id }})</span>
+                <span class="record-date">{{ record.date[:19].replace('T', ' ') }} JST</span>
             </div>
             <div class="record-content">
                 <div class="record-item">
@@ -93,7 +93,7 @@
                 </div>
                 <div class="record-item">
                     <label>主訴</label>
-                    <value>{{ record.chief_complaint }}</value>
+                    <value>{{ record.chief_complaint if record.chief_complaint else '記載なし' }}</value>
                 </div>
                 <div class="record-item">
                     <label>診断</label>
@@ -104,9 +104,15 @@
                     <value>{{ record.treatment }}</value>
                 </div>
                 <div class="record-item" style="grid-column: 1 / -1;">
-                    <label>備考</label>
+                    <label>備考（患者向け説明）</label>
                     <value>{{ record.notes }}</value>
                 </div>
+                {% if record.doctor_notes %}
+                <div class="record-item" style="grid-column: 1 / -1; background: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #dc3545;">
+                    <label>医師メモ（内部記録）</label>
+                    <value>{{ record.doctor_notes }}</value>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
