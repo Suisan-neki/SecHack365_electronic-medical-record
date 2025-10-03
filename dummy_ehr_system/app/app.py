@@ -11,6 +11,11 @@ import json
 import os
 from datetime import datetime
 import sys
+import base64
+import secrets
+from webauthn import generate_registration_options, verify_registration_response
+from webauthn import generate_authentication_options, verify_authentication_response
+from webauthn.helpers.structs import AttestationConveyancePreference, AuthenticatorSelectionCriteria, UserVerificationRequirement
 
 # パスを追加（core モジュールを使うため）
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../SecHack365_project'))
@@ -30,6 +35,13 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 PATIENTS_FILE = os.path.join(DATA_DIR, 'patients.json')
 RECORDS_FILE = os.path.join(DATA_DIR, 'medical_records.json')
+WEBAUTHN_CREDENTIALS_FILE = os.path.join(DATA_DIR, 'webauthn_credentials.json')
+
+# WebAuthn設定
+RP_ID = "localhost"
+RP_NAME = "患者情報共有システム"
+ORIGIN = "http://localhost:5001"
+RP_ICON = "https://localhost:5001/favicon.ico"
 
 
 # ==================== データ管理 ====================
@@ -57,6 +69,18 @@ def save_records(records):
     """診療記録を保存"""
     with open(RECORDS_FILE, 'w', encoding='utf-8') as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
+
+def load_webauthn_credentials():
+    """WebAuthn認証情報を読み込み"""
+    if os.path.exists(WEBAUTHN_CREDENTIALS_FILE):
+        with open(WEBAUTHN_CREDENTIALS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
+def save_webauthn_credentials(credentials):
+    """WebAuthn認証情報を保存"""
+    with open(WEBAUTHN_CREDENTIALS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(credentials, f, ensure_ascii=False, indent=2)
 
 def initialize_sample_data():
     """サンプルデータを初期化"""
@@ -494,29 +518,206 @@ def import_record():
 
 # ==================== WebAuthn認証 ====================
 
-@app.route('/api/webauthn/authenticate', methods=['POST'])
-def webauthn_authenticate():
-    """WebAuthn認証のモック実装"""
+@app.route('/api/webauthn/register/begin', methods=['POST'])
+def webauthn_register_begin():
+    """WebAuthn登録開始"""
+    print(f"[DEBUG] 登録開始エンドポイントにアクセスされました")
+    try:
+        data = request.get_json()
+        print(f"[DEBUG] 登録開始リクエスト: {data}")
+        username = data.get('username', '')
+        
+        if not username:
+            print(f"[ERROR] ユーザー名が空です")
+            return jsonify({'error': 'ユーザー名が必要です'}), 400
+        
+        # 登録オプションを生成
+        options = generate_registration_options(
+            rp_id=RP_ID,
+            rp_name=RP_NAME,
+            user_id=username.encode('utf-8'),
+            user_name=username,
+            user_display_name=username
+        )
+        
+        # チャレンジをセッションに保存（実際の実装ではセッションを使用）
+        # ここでは簡易的にファイルに保存
+        challenge_data = {
+            'challenge': base64.b64encode(options['challenge']).decode('utf-8'),
+            'username': username,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        with open(os.path.join(DATA_DIR, 'webauthn_challenge.json'), 'w') as f:
+            json.dump(challenge_data, f)
+        
+        return jsonify(options)
+        
+    except Exception as e:
+        print(f"[ERROR] WebAuthn登録開始エラー: {e}")
+        return jsonify({'error': '登録の開始に失敗しました'}), 500
+
+@app.route('/api/webauthn/register/complete', methods=['POST'])
+def webauthn_register_complete():
+    """WebAuthn登録完了"""
     try:
         data = request.get_json()
         username = data.get('username', '')
+        credential = data.get('credential', {})
         
-        # デモ用の認証（実際のWebAuthn認証は省略）
-        if username in ['doctor1', 'admin1', 'patient1']:
+        # チャレンジを読み込み
+        challenge_file = os.path.join(DATA_DIR, 'webauthn_challenge.json')
+        if not os.path.exists(challenge_file):
+            return jsonify({'error': 'チャレンジが見つかりません'}), 400
+        
+        with open(challenge_file, 'r') as f:
+            challenge_data = json.load(f)
+        
+        if challenge_data['username'] != username:
+            return jsonify({'error': 'ユーザー名が一致しません'}), 400
+        
+        # 認証情報を検証
+        try:
+            verification = verify_registration_response(
+                credential=credential,
+                expected_challenge=base64.b64decode(challenge_data['challenge']),
+                expected_origin=ORIGIN,
+                expected_rp_id=RP_ID
+            )
+            
+            # 認証情報を保存
+            credentials = load_webauthn_credentials()
+            credentials[username] = {
+                'id': verification.credential_id,
+                'public_key': base64.b64encode(verification.credential_public_key).decode('utf-8'),
+                'counter': verification.sign_count,
+                'device_type': 'platform',
+                'backed_up': False,
+                'transports': ['internal']
+            }
+            save_webauthn_credentials(credentials)
+            
+            # チャレンジファイルを削除
+            os.remove(challenge_file)
+            
             return jsonify({
                 'success': True,
-                'message': '認証成功',
+                'message': 'WebAuthn認証情報が登録されました'
+            })
+            
+        except Exception as e:
+            print(f"[ERROR] WebAuthn認証情報検証エラー: {e}")
+            return jsonify({'error': '認証情報の検証に失敗しました'}), 400
+        
+    except Exception as e:
+        print(f"[ERROR] WebAuthn登録完了エラー: {e}")
+        return jsonify({'error': '登録の完了に失敗しました'}), 500
+
+@app.route('/api/webauthn/authenticate/begin', methods=['POST'])
+def webauthn_authenticate_begin():
+    """WebAuthn認証開始"""
+    print(f"[DEBUG] 認証開始エンドポイントにアクセスされました")
+    try:
+        data = request.get_json()
+        print(f"[DEBUG] 認証開始リクエスト: {data}")
+        username = data.get('username', '')
+        
+        if not username:
+            print(f"[ERROR] ユーザー名が空です")
+            return jsonify({'error': 'ユーザー名が必要です'}), 400
+        
+        # 保存された認証情報を取得
+        credentials = load_webauthn_credentials()
+        if username not in credentials:
+            return jsonify({'error': '登録されていないユーザーです'}), 400
+        
+        user_credential = credentials[username]
+        
+        # 認証オプションを生成
+        options = generate_authentication_options(
+            rp_id=RP_ID,
+            allow_credentials=[{
+                'id': user_credential['id'],
+                'type': 'public-key',
+                'transports': user_credential['transports']
+            }]
+        )
+        
+        # チャレンジを保存
+        challenge_data = {
+            'challenge': base64.b64encode(options['challenge']).decode('utf-8'),
+            'username': username,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        with open(os.path.join(DATA_DIR, 'webauthn_challenge.json'), 'w') as f:
+            json.dump(challenge_data, f)
+        
+        return jsonify(options)
+        
+    except Exception as e:
+        print(f"[ERROR] WebAuthn認証開始エラー: {e}")
+        return jsonify({'error': '認証の開始に失敗しました'}), 500
+
+@app.route('/api/webauthn/authenticate/complete', methods=['POST'])
+def webauthn_authenticate_complete():
+    """WebAuthn認証完了"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '')
+        credential = data.get('credential', {})
+        
+        # チャレンジを読み込み
+        challenge_file = os.path.join(DATA_DIR, 'webauthn_challenge.json')
+        if not os.path.exists(challenge_file):
+            return jsonify({'error': 'チャレンジが見つかりません'}), 400
+        
+        with open(challenge_file, 'r') as f:
+            challenge_data = json.load(f)
+        
+        if challenge_data['username'] != username:
+            return jsonify({'error': 'ユーザー名が一致しません'}), 400
+        
+        # 保存された認証情報を取得
+        credentials = load_webauthn_credentials()
+        if username not in credentials:
+            return jsonify({'error': '登録されていないユーザーです'}), 400
+        
+        user_credential = credentials[username]
+        
+        # 認証を検証
+        try:
+            verification = verify_authentication_response(
+                credential=credential,
+                expected_challenge=base64.b64decode(challenge_data['challenge']),
+                expected_origin=ORIGIN,
+                expected_rp_id=RP_ID,
+                credential_public_key=base64.b64decode(user_credential['public_key']),
+                credential_current_sign_count=user_credential['counter']
+            )
+            
+            # カウンターを更新
+            credentials[username]['counter'] = verification.new_sign_count
+            save_webauthn_credentials(credentials)
+            
+            # チャレンジファイルを削除
+            os.remove(challenge_file)
+            
+            return jsonify({
+                'success': True,
                 'user': {
                     'username': username,
                     'role': 'doctor' if username.startswith('doctor') else 'admin' if username.startswith('admin') else 'patient'
                 }
             })
-        else:
-            return jsonify({'success': False, 'error': '認証に失敗しました'}), 401
             
+        except Exception as e:
+            print(f"[ERROR] WebAuthn認証検証エラー: {e}")
+            return jsonify({'error': '認証の検証に失敗しました'}), 400
+        
     except Exception as e:
-        print(f"[ERROR] WebAuthn認証エラー: {e}")
-        return jsonify({'success': False, 'error': '認証中にエラーが発生しました'}), 500
+        print(f"[ERROR] WebAuthn認証完了エラー: {e}")
+        return jsonify({'error': '認証の完了に失敗しました'}), 500
 
 
 # ==================== 起動 ====================
