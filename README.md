@@ -98,6 +98,16 @@ python run_app.py
 - **模擬電子カルテ**: http://localhost:5002
 - デモアカウント: doctor1, admin1, patient1
 
+###  自分用
+
+# 1. 模擬電子カルテ起動
+cd C:\Users\yamas\Downloads\SecHack365_electronic-medical-record\dummy_ehr_system
+python run_dummy_ehr.py
+
+# 2. 新しいターミナルでReactアプリ起動
+cd C:\Users\yamas\Downloads\SecHack365_electronic-medical-record\SecHack365_project
+npm run dev
+
 ## 環境設定
 
 初回起動前に、環境変数を設定することを推奨します：

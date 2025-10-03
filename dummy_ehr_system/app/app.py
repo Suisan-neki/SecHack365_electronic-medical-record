@@ -6,6 +6,7 @@
 """
 
 from flask import Flask, render_template, jsonify, request, send_file
+from flask_cors import CORS
 import json
 import os
 from datetime import datetime
@@ -15,6 +16,13 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../SecHack365_project'))
 
 app = Flask(__name__)
+
+# CORS設定
+CORS(app, 
+     origins=['http://localhost:5001'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization'],
+     supports_credentials=True)
 
 # データディレクトリ
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../data')
@@ -482,6 +490,33 @@ def import_record():
     except Exception as e:
         print(f"[ERROR] 診療記録インポートエラー: {e}")
         return jsonify({'success': False, 'error': f'診療記録のインポート中にエラーが発生しました: {str(e)}'}), 500
+
+
+# ==================== WebAuthn認証 ====================
+
+@app.route('/api/webauthn/authenticate', methods=['POST'])
+def webauthn_authenticate():
+    """WebAuthn認証のモック実装"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '')
+        
+        # デモ用の認証（実際のWebAuthn認証は省略）
+        if username in ['doctor1', 'admin1', 'patient1']:
+            return jsonify({
+                'success': True,
+                'message': '認証成功',
+                'user': {
+                    'username': username,
+                    'role': 'doctor' if username.startswith('doctor') else 'admin' if username.startswith('admin') else 'patient'
+                }
+            })
+        else:
+            return jsonify({'success': False, 'error': '認証に失敗しました'}), 401
+            
+    except Exception as e:
+        print(f"[ERROR] WebAuthn認証エラー: {e}")
+        return jsonify({'success': False, 'error': '認証中にエラーが発生しました'}), 500
 
 
 # ==================== 起動 ====================
