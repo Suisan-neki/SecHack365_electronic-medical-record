@@ -46,11 +46,11 @@ apiClient.interceptors.response.use(
 // API 関数
 export const api = {
   // 患者関連
-  getPatients: (): Promise<ApiResponse<Patient[]>> =>
-    apiClient.get('/api/dummy-ehr/patients').then(res => res.data),
+  getPatients: (): Promise<Patient[]> =>
+    apiClient.get('/api/patients').then(res => res.data),
   
-  getPatient: (patientId: string): Promise<ApiResponse<Patient>> =>
-    apiClient.get(`/api/dummy-ehr/patient/${patientId}`).then(res => res.data),
+  getPatient: (patientId: string): Promise<Patient> =>
+    apiClient.get(`/api/patient/${patientId}`).then(res => res.data),
 
   // タグ関連
   getSymptomTags: (): Promise<ApiResponse<Tag[]>> =>
@@ -61,7 +61,7 @@ export const api = {
 
   // 診療記録関連
   submitMedicalRecord: (record: Partial<MedicalRecord>): Promise<ApiResponse<any>> =>
-    apiClient.post('/api/dummy-ehr/record', record).then(res => res.data),
+    apiClient.post('/api/import/record', record).then(res => res.data),
 
   // 患者表示関連
   setPatientDisplay: (data: any): Promise<ApiResponse<any>> =>

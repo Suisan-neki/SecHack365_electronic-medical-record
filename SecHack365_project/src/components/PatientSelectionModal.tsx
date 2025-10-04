@@ -19,11 +19,9 @@ const PatientSelectionModal: React.FC = () => {
   const handlePatientSelect = async (patient: Patient) => {
     try {
       setLoading(true);
-      const response = await api.getPatient(patient.patient_id);
-      if (response.success && response.data) {
-        setCurrentPatient(response.data);
-        setIsOpen(false);
-      }
+      const patientData = await api.getPatient(patient.patient_id);
+      setCurrentPatient(patientData);
+      setIsOpen(false);
     } catch (err) {
       setError('患者データの取得に失敗しました');
     } finally {
@@ -79,9 +77,9 @@ const PatientSelectionModal: React.FC = () => {
           </div>
         )}
 
-        {patients?.data && (
+        {patients && (
           <div className="patient-list">
-            {patients.data.map((patient) => (
+            {patients.map((patient) => (
               <div
                 key={patient.patient_id}
                 className="patient-item"

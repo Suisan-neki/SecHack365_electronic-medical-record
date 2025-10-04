@@ -45,7 +45,9 @@ module.exports = {
     proxy: {
       '/api': {
         target: 'http://localhost:5002',
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false,
+        logLevel: 'debug'
       }
     }
   }
