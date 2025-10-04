@@ -47,7 +47,9 @@ module.exports = {
         target: 'http://localhost:5002',
         changeOrigin: true,
         secure: false,
-        logLevel: 'debug'
+        logLevel: 'debug',
+        timeout: 30000,
+        proxyTimeout: 30000
       }
     }
   }
