@@ -1,15 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { api } from '../api/client';
+import { authenticateWebAuthn, registerWebAuthn, isWebAuthnSupported, getAvailableAuthenticators } from '../utils/webauthn';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
 const LoginPage: React.FC = () => {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [webAuthnSupported, setWebAuthnSupported] = useState(false);
+  const [availableAuthenticators, setAvailableAuthenticators] = useState<string[]>([]);
   const { setUser, setError } = useAppStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // WebAuthnサポートチェック
+    setWebAuthnSupported(isWebAuthnSupported());
+    
+    if (isWebAuthnSupported()) {
+      getAvailableAuthenticators().then(setAvailableAuthenticators);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,16 +45,33 @@ const LoginPage: React.FC = () => {
   };
 
   const handleWebAuthnLogin = async () => {
+    if (!webAuthnSupported) {
+      setError('このブラウザはWebAuthnをサポートしていません');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
       // デモ用のユーザー名を設定
       const username = 'doctor1';
-      const response = await api.authenticateWebAuthn(username);
-      if (response.success) {
+      
+      setError('WebAuthn認証を開始しています...');
+      
+      // まず登録を試行
+      const registerResponse = await registerWebAuthn(username);
+      if (registerResponse.success) {
+        setError('WebAuthn認証情報を登録しました。認証を開始します...');
+      }
+      
+      // 実際のWebAuthn認証を実行
+      const response = await authenticateWebAuthn(username);
+      
+      if (response.success && response.user) {
+        setError('認証成功！ログインしています...');
         setUser(response.user);
-        localStorage.setItem('auth_token', 'demo_token');
+        localStorage.setItem('auth_token', 'webauthn_token');
         navigate('/dashboard');
       } else {
         setError(response.error || 'WebAuthn認証に失敗しました');
@@ -110,6 +139,32 @@ const LoginPage: React.FC = () => {
           <p>デモアカウント:</p>
           <p>doctor1 / admin1 / patient1</p>
         </div>
+        
+        {isLoading && (
+          <div style={{ 
+            marginTop: '20px', 
+            padding: '15px', 
+            backgroundColor: '#f0f8ff', 
+            border: '1px solid #007bff', 
+            borderRadius: '4px',
+            textAlign: 'center'
+          }}>
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ 
+                width: '20px', 
+                height: '20px', 
+                border: '2px solid #007bff', 
+                borderTop: '2px solid transparent', 
+                borderRadius: '50%', 
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto'
+              }}></div>
+            </div>
+            <div style={{ color: '#007bff', fontWeight: 'bold' }}>
+              WebAuthn認証中...
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
