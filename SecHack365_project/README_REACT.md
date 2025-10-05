@@ -69,9 +69,9 @@ npm run build
 ```
 
 ### アクセス
-- **React Webアプリ**: http://localhost:3000
 - **既存Flask API**: http://localhost:5001
 - **模擬電子カルテ**: http://localhost:5002
+
 
 ## 🎯 主要機能
 

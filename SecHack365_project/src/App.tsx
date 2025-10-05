@@ -5,6 +5,9 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import InputFormPage from './pages/InputFormPage';
 import PatientDisplayPage from './pages/PatientDisplayPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminSecurityPage from './pages/AdminSecurityPage';
+import WebAuthnLoginPage from './pages/WebAuthnLoginPage';
 import PatientSelectionModal from './components/PatientSelectionModal';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorMessage from './components/ErrorMessage';
@@ -27,6 +30,10 @@ const App: React.FC = () => {
             element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
           />
           <Route 
+            path="/webauthn-login" 
+            element={user ? <Navigate to="/dashboard" replace /> : <WebAuthnLoginPage />} 
+          />
+          <Route 
             path="/dashboard" 
             element={user ? <DashboardPage /> : <Navigate to="/login" replace />} 
           />
@@ -37,6 +44,14 @@ const App: React.FC = () => {
           <Route 
             path="/patient-display" 
             element={<PatientDisplayPage />} 
+          />
+          <Route 
+            path="/admin" 
+            element={user?.role === 'admin' ? <AdminDashboardPage /> : <Navigate to="/dashboard" replace />} 
+          />
+          <Route 
+            path="/admin/security" 
+            element={user?.role === 'admin' ? <AdminSecurityPage /> : <Navigate to="/dashboard" replace />} 
           />
           <Route 
             path="/" 
