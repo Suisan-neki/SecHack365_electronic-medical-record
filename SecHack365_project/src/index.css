@@ -1,201 +1,116 @@
-/* グローバルスタイル */
-* {
-  box-sizing: border-box;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* アニメーション */
+/* カスタムアニメーション */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
+/* ベーススタイル */
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
-  color: #333;
+  @apply font-sans antialiased bg-gray-50 text-gray-900;
 }
 
 #root {
-  min-height: 100vh;
+  @apply min-h-screen;
 }
 
-/* 共通スタイル */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+/* カスタムコンポーネントクラス - Tailwindベース */
+@layer components {
+  .container {
+    @apply max-w-6xl mx-auto px-5;
+  }
+
+  .btn {
+    @apply px-4 py-2 border-0 rounded cursor-pointer text-sm transition-all duration-200 no-underline inline-block text-center font-medium;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  }
+
+  .btn-success {
+    @apply bg-medical-600 text-white hover:bg-medical-700 focus:ring-2 focus:ring-medical-500 focus:ring-offset-2;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+  }
+
+  .btn:disabled {
+    @apply opacity-60 cursor-not-allowed;
+  }
 }
 
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  display: inline-block;
-  text-align: center;
+  /* フォームスタイル */
+  .form-group {
+    @apply mb-5;
+  }
+
+  .form-group label {
+    @apply block mb-2 font-medium text-gray-700;
+  }
+
+  .form-control {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+  }
+
+  textarea.form-control {
+    @apply min-h-20 resize-y;
+  }
 }
 
-.btn-primary {
-  background-color: #007bff;
-  color: white;
+  /* カードスタイル */
+  .card {
+    @apply bg-white rounded-lg shadow-md p-5 mb-5 border border-gray-200;
+  }
+
+  /* タグスタイル */
+  .tag {
+    @apply inline-block px-2 py-1 m-1 bg-gray-100 border border-gray-300 rounded text-xs cursor-pointer transition-all duration-200 hover:bg-gray-200;
+  }
+
+  .tag.selected {
+    @apply bg-primary-600 text-white border-primary-600;
+  }
+
+  /* ローディング */
+  .loading {
+    @apply text-center p-5;
+  }
+
+  .spinner {
+    @apply border-4 border-gray-200 border-t-primary-600 rounded-full w-10 h-10 animate-spin mx-auto;
+  }
 }
 
-.btn-primary:hover {
-  background-color: #0056b3;
+  /* アラートメッセージ */
+  .alert {
+    @apply px-4 py-3 rounded-md mb-5 border;
+  }
+
+  .alert-error {
+    @apply bg-red-50 text-red-800 border-red-200;
+  }
+
+  .alert-success {
+    @apply bg-medical-50 text-medical-800 border-medical-200;
+  }
 }
 
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background-color: #545b62;
-}
-
-.btn-success {
-  background-color: #28a745;
-  color: white;
-}
-
-.btn-success:hover {
-  background-color: #1e7e34;
-}
-
-.btn-danger {
-  background-color: #dc3545;
-  color: white;
-}
-
-.btn-danger:hover {
-  background-color: #c82333;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* フォームスタイル */
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #333;
-}
-
-.form-control {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: border-color 0.2s ease;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-textarea.form-control {
-  min-height: 80px;
-  resize: vertical;
-}
-
-/* カードスタイル */
-.card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-/* タグスタイル */
-.tag {
-  display: inline-block;
-  padding: 4px 8px;
-  margin: 2px;
-  background-color: #e9ecef;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tag:hover {
-  background-color: #dee2e6;
-}
-
-.tag.selected {
-  background-color: #007bff;
-  color: white;
-  border-color: #007bff;
-}
-
-/* ローディング */
-.loading {
-  text-align: center;
-  padding: 20px;
-}
-
-.spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* エラー・成功メッセージ */
-.alert {
-  padding: 12px 16px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-}
-
-.alert-error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.alert-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-/* レスポンシブ */
+/* レスポンシブデザイン */
 @media (max-width: 768px) {
   .container {
-    padding: 10px;
+    @apply px-3;
   }
   
   .btn {
-    width: 100%;
-    margin-bottom: 10px;
+    @apply w-full mb-2;
   }
 }
