@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import Button from '../components/Button';
 
@@ -35,6 +35,21 @@ const DashboardPage: React.FC = () => {
         <h1>ダッシュボード</h1>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <span>こんにちは、{user?.username}さん</span>
+          {user?.role === 'admin' && (
+            <Link
+              to="/admin"
+              style={{
+                backgroundColor: '#7c3aed',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                textDecoration: 'none',
+                fontSize: '14px'
+              }}
+            >
+              管理者画面
+            </Link>
+          )}
           <Button variant="secondary" onClick={handleLogout}>
             ログアウト
           </Button>

@@ -98,15 +98,30 @@ python run_app.py
 - **模擬電子カルテ**: http://localhost:5002
 - デモアカウント: doctor1, admin1, patient1
 
-###  自分用
+## 🚀 簡単起動方法
 
+### ⚡ 自動起動スクリプト（推奨）
+```bash
+# システムを一括起動
+start_systems.bat
+
+# システムを再起動
+restart_systems.bat
+
+# システムを停止
+stop_systems.bat
+```
+
+### 🔧 手動起動
+```bash
 # 1. 模擬電子カルテ起動
-cd C:\Users\yamas\Downloads\SecHack365_electronic-medical-record\dummy_ehr_system
+cd dummy_ehr_system
 python run_dummy_ehr.py
 
 # 2. 新しいターミナルでReactアプリ起動
-cd C:\Users\yamas\Downloads\SecHack365_electronic-medical-record\SecHack365_project
+cd SecHack365_project
 npm run dev
+```
 
 ## 環境設定
 

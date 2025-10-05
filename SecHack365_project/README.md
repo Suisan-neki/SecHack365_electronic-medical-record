@@ -225,3 +225,6 @@ pip install -r requirements.txt --force-reinstall
 ## ライセンス
 
 このプロジェクトはSecHack365の一環として開発されています。
+
+#自分用
+.\start_systems.bat

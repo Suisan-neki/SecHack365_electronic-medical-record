@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { api } from '../api/client';
 import { authenticateWebAuthn, registerWebAuthn, isWebAuthnSupported, getAvailableAuthenticators } from '../utils/webauthn';
@@ -44,44 +44,6 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleWebAuthnLogin = async () => {
-    if (!webAuthnSupported) {
-      setError('このブラウザはWebAuthnをサポートしていません');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // デモ用のユーザー名を設定
-      const username = 'doctor1';
-      
-      setError('WebAuthn認証を開始しています...');
-      
-      // まず登録を試行
-      const registerResponse = await registerWebAuthn(username);
-      if (registerResponse.success) {
-        setError('WebAuthn認証情報を登録しました。認証を開始します...');
-      }
-      
-      // 実際のWebAuthn認証を実行
-      const response = await authenticateWebAuthn(username);
-      
-      if (response.success && response.user) {
-        setError('認証成功！ログインしています...');
-        setUser(response.user);
-        localStorage.setItem('auth_token', 'webauthn_token');
-        navigate('/dashboard');
-      } else {
-        setError(response.error || 'WebAuthn認証に失敗しました');
-      }
-    } catch (error) {
-      setError('WebAuthn認証に失敗しました');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="container">
@@ -120,18 +82,36 @@ const LoginPage: React.FC = () => {
               disabled={isLoading}
               style={{ flex: 1 }}
             >
-              {isLoading ? 'ログイン中...' : 'ログイン'}
+              {isLoading ? 'ログイン中...' : 'パスワードログイン'}
             </Button>
             
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleWebAuthnLogin}
-              disabled={isLoading}
-              style={{ flex: 1 }}
+            <Link
+              to="/webauthn-login"
+              style={{ flex: 1, textDecoration: 'none' }}
             >
-              WebAuthn
-            </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={isLoading}
+                style={{ width: '100%' }}
+              >
+                🔐 WebAuthn
+              </Button>
+            </Link>
+          </div>
+          
+          <div style={{ 
+            fontSize: '12px', 
+            color: '#666', 
+            textAlign: 'center', 
+            marginBottom: '20px',
+            padding: '10px',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '4px'
+          }}>
+            <strong>WebAuthn認証:</strong><br/>
+            指紋・顔認証などの生体認証でログインできます<br/>
+            専用ページでユーザー名を入力してください
           </div>
         </form>
 

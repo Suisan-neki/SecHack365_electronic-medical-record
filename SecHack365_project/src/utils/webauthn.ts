@@ -57,19 +57,17 @@ export const registerWebAuthn = async (username: string): Promise<WebAuthnRegist
 
     const options = await response.json();
 
-    // 2. ブラウザでWebAuthn認証情報を作成
+    // 2. ブラウザでWebAuthn認証情報を作成（軽量化設定）
     const credential = await navigator.credentials.create({
       publicKey: {
-        challenge: new Uint8Array(atob(options.challenge).split('').map(c => c.charCodeAt(0))),
+        challenge: base64urlToUint8Array(options.challenge),
         rp: options.rp,
         user: {
           ...options.user,
-          id: new Uint8Array(atob(options.user.id).split('').map(c => c.charCodeAt(0)))
+          id: base64urlToUint8Array(options.user.id)
         },
         pubKeyCredParams: options.pubKeyCredParams,
-        authenticatorSelection: options.authenticatorSelection,
-        timeout: options.timeout,
-        attestation: options.attestation
+        timeout: options.timeout
       }
     }) as PublicKeyCredential;
 
@@ -106,21 +104,25 @@ export const registerWebAuthn = async (username: string): Promise<WebAuthnRegist
 
   } catch (error) {
     console.error('WebAuthn登録エラー:', error);
-    
+
     let errorMessage = 'WebAuthn登録に失敗しました';
-    
+
     if (error instanceof Error) {
       if (error.name === 'NotAllowedError') {
-        errorMessage = '指紋認証がキャンセルされました。再度お試しください。';
+        errorMessage = '認証がキャンセルされました。';
       } else if (error.name === 'NotSupportedError') {
         errorMessage = 'このデバイスはWebAuthnをサポートしていません。';
       } else if (error.name === 'SecurityError') {
         errorMessage = 'セキュリティエラーが発生しました。';
+      } else if (error.name === 'AbortError') {
+        errorMessage = '認証が中断されました。';
+      } else if (error.name === 'InvalidStateError') {
+        errorMessage = '認証状態が無効です。';
       } else {
         errorMessage = error.message;
       }
     }
-    
+
     return {
       success: false,
       error: errorMessage,
@@ -154,15 +156,11 @@ export const authenticateWebAuthn = async (username: string): Promise<WebAuthnAu
       options.allowCredentials[0].id = base64urlToUint8Array(options.allowCredentials[0].id);
     }
 
-    // 2. ブラウザでWebAuthn認証を実行
+    // 2. ブラウザでWebAuthn認証を実行（軽量化設定）
     const credential = await navigator.credentials.get({
       publicKey: {
-        challenge: new Uint8Array(atob(options.challenge).split('').map(c => c.charCodeAt(0))),
-        allowCredentials: options.allowCredentials ? options.allowCredentials.map(cred => ({
-          ...cred,
-          id: new Uint8Array(atob(cred.id).split('').map(c => c.charCodeAt(0)))
-        })) : undefined,
-        userVerification: options.userVerification,
+        challenge: base64urlToUint8Array(options.challenge),
+        allowCredentials: options.allowCredentials,
         timeout: options.timeout
       }
     }) as PublicKeyCredential;
@@ -198,21 +196,25 @@ export const authenticateWebAuthn = async (username: string): Promise<WebAuthnAu
 
   } catch (error) {
     console.error('WebAuthn認証エラー:', error);
-    
+
     let errorMessage = 'WebAuthn認証に失敗しました';
-    
+
     if (error instanceof Error) {
       if (error.name === 'NotAllowedError') {
-        errorMessage = '指紋認証がキャンセルされました。再度お試しください。';
+        errorMessage = '認証がキャンセルされました。';
       } else if (error.name === 'NotSupportedError') {
         errorMessage = 'このデバイスはWebAuthnをサポートしていません。';
       } else if (error.name === 'SecurityError') {
         errorMessage = 'セキュリティエラーが発生しました。';
+      } else if (error.name === 'AbortError') {
+        errorMessage = '認証が中断されました。';
+      } else if (error.name === 'InvalidStateError') {
+        errorMessage = '認証状態が無効です。';
       } else {
         errorMessage = error.message;
       }
     }
-    
+
     return {
       success: false,
       error: errorMessage,
