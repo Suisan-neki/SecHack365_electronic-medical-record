@@ -46,105 +46,105 @@ const LoginPage: React.FC = () => {
 
 
   return (
-    <div className="container">
-      <div className="card" style={{ maxWidth: '400px', margin: '50px auto' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>
-          患者情報共有システム
-        </h1>
-        
-        <form onSubmit={handleLogin}>
-          <div className="form-group">
-            <label>ユーザー名</label>
-            <Input
-              type="text"
-              value={credentials.username}
-              onChange={(value) => setCredentials({ ...credentials, username: value })}
-              placeholder="ユーザー名を入力"
-              required
-            />
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-medical-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="card shadow-medical-lg border-0 bg-white/80 backdrop-blur-sm">
+          {/* ヘッダー */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-full mb-4">
+              <span className="text-2xl">🏥</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              患者情報共有システム
+            </h1>
+            <p className="text-sm text-gray-600">
+              安全で効率的な医療情報管理
+            </p>
           </div>
           
-          <div className="form-group">
-            <label>パスワード</label>
-            <Input
-              type="password"
-              value={credentials.password}
-              onChange={(value) => setCredentials({ ...credentials, password: value })}
-              placeholder="パスワードを入力"
-              required
-            />
-          </div>
-          
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isLoading}
-              style={{ flex: 1 }}
-            >
-              {isLoading ? 'ログイン中...' : 'パスワードログイン'}
-            </Button>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="form-group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ユーザー名
+              </label>
+              <Input
+                type="text"
+                value={credentials.username}
+                onChange={(value) => setCredentials({ ...credentials, username: value })}
+                placeholder="ユーザー名を入力"
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+              />
+            </div>
             
-            <Link
-              to="/webauthn-login"
-              style={{ flex: 1, textDecoration: 'none' }}
-            >
+            <div className="form-group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                パスワード
+              </label>
+              <Input
+                type="password"
+                value={credentials.password}
+                onChange={(value) => setCredentials({ ...credentials, password: value })}
+                placeholder="パスワードを入力"
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+              />
+            </div>
+            
+            <div className="flex gap-3">
               <Button
-                type="button"
-                variant="secondary"
+                type="submit"
+                variant="primary"
                 disabled={isLoading}
-                style={{ width: '100%' }}
+                className="flex-1 py-3 text-base font-medium"
               >
-                🔐 WebAuthn
+                {isLoading ? 'ログイン中...' : 'パスワードログイン'}
               </Button>
-            </Link>
+              
+              <Link
+                to="/webauthn-login"
+                className="flex-1"
+              >
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={isLoading}
+                  className="w-full py-3 text-base font-medium"
+                >
+                  🔐 WebAuthn
+                </Button>
+              </Link>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+              <div className="text-sm text-blue-800">
+                <strong className="block mb-1">WebAuthn認証:</strong>
+                <span className="text-xs">
+                  指紋・顔認証などの生体認証でログインできます<br/>
+                  専用ページでユーザー名を入力してください
+                </span>
+              </div>
+            </div>
+          </form>
+
+          <div className="mt-6 text-center">
+            <div className="text-sm text-gray-600 mb-2">デモアカウント:</div>
+            <div className="flex flex-wrap justify-center gap-2 text-xs">
+              <span className="bg-gray-100 px-2 py-1 rounded">doctor1</span>
+              <span className="bg-gray-100 px-2 py-1 rounded">admin1</span>
+              <span className="bg-gray-100 px-2 py-1 rounded">patient1</span>
+            </div>
           </div>
           
-          <div style={{ 
-            fontSize: '12px', 
-            color: '#666', 
-            textAlign: 'center', 
-            marginBottom: '20px',
-            padding: '10px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '4px'
-          }}>
-            <strong>WebAuthn認証:</strong><br/>
-            指紋・顔認証などの生体認証でログインできます<br/>
-            専用ページでユーザー名を入力してください
-          </div>
-        </form>
-
-        <div style={{ textAlign: 'center', fontSize: '14px', color: '#666' }}>
-          <p>デモアカウント:</p>
-          <p>doctor1 / admin1 / patient1</p>
+          {isLoading && (
+            <div className="mt-6 p-4 bg-primary-50 border border-primary-200 rounded-lg text-center">
+              <div className="spinner mb-3"></div>
+              <div className="text-primary-700 font-medium">
+                WebAuthn認証中...
+              </div>
+            </div>
+          )}
         </div>
-        
-        {isLoading && (
-          <div style={{ 
-            marginTop: '20px', 
-            padding: '15px', 
-            backgroundColor: '#f0f8ff', 
-            border: '1px solid #007bff', 
-            borderRadius: '4px',
-            textAlign: 'center'
-          }}>
-            <div style={{ marginBottom: '10px' }}>
-              <div style={{ 
-                width: '20px', 
-                height: '20px', 
-                border: '2px solid #007bff', 
-                borderTop: '2px solid transparent', 
-                borderRadius: '50%', 
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto'
-              }}></div>
-            </div>
-            <div style={{ color: '#007bff', fontWeight: 'bold' }}>
-              WebAuthn認証中...
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
