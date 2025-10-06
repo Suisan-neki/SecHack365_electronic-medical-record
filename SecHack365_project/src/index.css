@@ -46,7 +46,6 @@ body {
   .btn:disabled {
     @apply opacity-60 cursor-not-allowed;
   }
-}
 
   /* フォームスタイル */
   .form-group {
@@ -64,7 +63,6 @@ body {
   textarea.form-control {
     @apply min-h-20 resize-y;
   }
-}
 
   /* カードスタイル */
   .card {
@@ -88,7 +86,6 @@ body {
   .spinner {
     @apply border-4 border-gray-200 border-t-primary-600 rounded-full w-10 h-10 animate-spin mx-auto;
   }
-}
 
   /* アラートメッセージ */
   .alert {

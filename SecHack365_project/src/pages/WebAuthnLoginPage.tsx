@@ -122,9 +122,9 @@ const WebAuthnLoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-medical-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="card shadow-medical-lg border-0 bg-white/80 backdrop-blur-sm">
+         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center px-4">
+           <div className="w-full max-w-lg">
+             <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 p-8">
           {/* ヘッダー */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-full mb-4">
@@ -138,14 +138,20 @@ const WebAuthnLoginPage: React.FC = () => {
             </p>
           </div>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center mb-6">
-            <div className="text-sm text-blue-800">
-              <strong className="block mb-1">指紋・顔認証でログイン</strong>
-              <span className="text-xs">
-                ユーザー名を入力して、生体認証でログインしてください
-              </span>
-            </div>
-          </div>
+                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 text-center mb-8 shadow-sm">
+                   <div className="flex items-center justify-center mb-3">
+                     <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                       <span className="text-2xl">👆</span>
+                     </div>
+                     <div className="text-left">
+                       <h3 className="text-lg font-semibold text-blue-900">生体認証ログイン</h3>
+                       <p className="text-sm text-blue-700">指紋・顔認証で安全にログイン</p>
+                     </div>
+                   </div>
+                   <p className="text-sm text-blue-600">
+                     ユーザー名を入力して、Windows Helloで認証してください
+                   </p>
+                 </div>
 
           <div className="form-group">
             <label className="block text-sm font-medium text-gray-700 mb-2">
