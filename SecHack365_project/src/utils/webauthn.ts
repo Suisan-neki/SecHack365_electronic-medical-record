@@ -57,19 +57,25 @@ export const registerWebAuthn = async (username: string): Promise<WebAuthnRegist
 
     const options = await response.json();
 
-    // 2. ブラウザでWebAuthn認証情報を作成（軽量化設定）
-    const credential = await navigator.credentials.create({
-      publicKey: {
-        challenge: base64urlToUint8Array(options.challenge),
-        rp: options.rp,
-        user: {
-          ...options.user,
-          id: base64urlToUint8Array(options.user.id)
-        },
-        pubKeyCredParams: options.pubKeyCredParams,
-        timeout: options.timeout
-      }
-    }) as PublicKeyCredential;
+           // 2. ブラウザでWebAuthn認証情報を作成（Windows Hello最適化）
+           const credential = await navigator.credentials.create({
+             publicKey: {
+               challenge: base64urlToUint8Array(options.challenge),
+               rp: options.rp,
+               user: {
+                 ...options.user,
+                 id: base64urlToUint8Array(options.user.id)
+               },
+               pubKeyCredParams: options.pubKeyCredParams,
+               timeout: 60000, // 60秒に延長
+               authenticatorSelection: {
+                 authenticatorAttachment: 'platform', // プラットフォーム認証器のみ
+                 userVerification: 'required', // ユーザー検証必須
+                 residentKey: 'preferred' // リジデントキー推奨
+               },
+               attestation: 'none' // アテステーション不要
+             }
+           }) as PublicKeyCredential;
 
     if (!credential) {
       throw new Error('認証情報の作成に失敗しました');
@@ -156,14 +162,15 @@ export const authenticateWebAuthn = async (username: string): Promise<WebAuthnAu
       options.allowCredentials[0].id = base64urlToUint8Array(options.allowCredentials[0].id);
     }
 
-    // 2. ブラウザでWebAuthn認証を実行（軽量化設定）
-    const credential = await navigator.credentials.get({
-      publicKey: {
-        challenge: base64urlToUint8Array(options.challenge),
-        allowCredentials: options.allowCredentials,
-        timeout: options.timeout
-      }
-    }) as PublicKeyCredential;
+           // 2. ブラウザでWebAuthn認証を実行（Windows Hello最適化）
+           const credential = await navigator.credentials.get({
+             publicKey: {
+               challenge: base64urlToUint8Array(options.challenge),
+               allowCredentials: options.allowCredentials,
+               timeout: 60000, // 60秒に延長
+               userVerification: 'required' // ユーザー検証必須
+             }
+           }) as PublicKeyCredential;
 
     // 3. サーバーに認証結果を送信
     const verifyResponse = await fetch('http://localhost:5002/api/webauthn/authenticate/complete', {
