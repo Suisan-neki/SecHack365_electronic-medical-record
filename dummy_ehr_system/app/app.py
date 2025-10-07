@@ -13,6 +13,20 @@ from datetime import datetime
 import sys
 import base64
 import secrets
+
+# Phase 1モジュールをインポート（一時的にコメントアウト）
+# try:
+#     from app.data_quality_manager import DataQualityManager
+#     from app.anonymizer import BasicAnonymizer
+#     from app.consent_manager import ConsentManager
+#     PHASE1_AVAILABLE = True
+#     print("[INFO] Phase 1モジュールのインポートに成功しました")
+# except ImportError as e:
+#     print(f"[WARNING] Phase 1モジュールのインポートに失敗しました: {e}")
+PHASE1_AVAILABLE = False
+
+# 新しいモジュールをインポート（一時的にコメントアウト）
+# from api_extensions import api_extensions
 try:
     from webauthn import generate_registration_options, verify_registration_response
     from webauthn import generate_authentication_options, verify_authentication_response
@@ -35,9 +49,22 @@ CORS(app,
      allow_headers=['Content-Type', 'Authorization'],
      supports_credentials=True)
 
+# API拡張機能を登録（一時的にコメントアウト）
+# app.register_blueprint(api_extensions)
+
 # データディレクトリ
 DATA_DIR = os.path.join(os.path.dirname(__file__), '../data')
 os.makedirs(DATA_DIR, exist_ok=True)
+
+# Phase 1モジュールのインスタンス化（一時的にコメントアウト）
+# if PHASE1_AVAILABLE:
+#     data_quality_manager = DataQualityManager(DATA_DIR)
+#     anonymizer = BasicAnonymizer(DATA_DIR)
+#     consent_manager = ConsentManager(DATA_DIR)
+# else:
+data_quality_manager = None
+anonymizer = None
+consent_manager = None
 
 PATIENTS_FILE = os.path.join(DATA_DIR, 'patients.json')
 RECORDS_FILE = os.path.join(DATA_DIR, 'medical_records.json')
@@ -875,6 +902,122 @@ def webauthn_authenticate_complete():
     except Exception as e:
         print(f"[ERROR] WebAuthn認証完了エラー: {e}")
         return jsonify({'error': '認証の完了に失敗しました'}), 500
+
+
+# ==================== Phase 1 API エンドポイント ====================
+
+@app.route('/api/phase1/data-quality/check', methods=['GET'])
+def check_data_quality():
+    """データ品質をチェックする"""
+    if not PHASE1_AVAILABLE or not data_quality_manager:
+        return jsonify({'error': 'Phase 1機能が利用できません'}), 503
+    
+    try:
+        integrity_report = data_quality_manager.check_data_integrity()
+        return jsonify(integrity_report)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/phase1/data-quality/metrics', methods=['GET'])
+def get_quality_metrics():
+    """データ品質メトリクスを取得する"""
+    if not PHASE1_AVAILABLE or not data_quality_manager:
+        return jsonify({'error': 'Phase 1機能が利用できません'}), 503
+    
+    try:
+        metrics = data_quality_manager.get_quality_metrics()
+        return jsonify(metrics)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/phase1/anonymize/export', methods=['POST'])
+def export_anonymized_data():
+    """匿名化されたデータをエクスポートする"""
+    if not PHASE1_AVAILABLE or not anonymizer:
+        return jsonify({'error': 'Phase 1機能が利用できません'}), 503
+    
+    try:
+        data = request.get_json()
+        level = data.get('level', 'level1')
+        
+        # 匿名化データセットを生成
+        anonymized_dataset = anonymizer.export_anonymized_dataset(level)
+        
+        return jsonify(anonymized_dataset)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/phase1/consent/purposes', methods=['GET'])
+def get_consent_purposes():
+    """利用目的の一覧を取得する"""
+    if not PHASE1_AVAILABLE or not consent_manager:
+        return jsonify({'error': 'Phase 1機能が利用できません'}), 503
+    
+    try:
+        purposes = consent_manager.get_consent_purposes()
+        return jsonify(purposes)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/phase1/consent/create', methods=['POST'])
+def create_consent():
+    """患者の同意を作成する"""
+    if not PHASE1_AVAILABLE or not consent_manager:
+        return jsonify({'error': 'Phase 1機能が利用できません'}), 503
+    
+    try:
+        data = request.get_json()
+        patient_id = data.get('patient_id')
+        purposes = data.get('purposes', [])
+        anonymization_level = data.get('anonymization_level', 'level1')
+        duration_days = data.get('duration_days')
+        
+        consent_info = consent_manager.create_consent(
+            patient_id, purposes, anonymization_level, duration_days
+        )
+        
+        return jsonify(consent_info)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/phase1/consent/<patient_id>', methods=['GET'])
+def get_consent(patient_id):
+    """患者の同意情報を取得する"""
+    if not PHASE1_AVAILABLE or not consent_manager:
+        return jsonify({'error': 'Phase 1機能が利用できません'}), 503
+    
+    try:
+        consent = consent_manager.get_consent(patient_id)
+        if consent:
+            return jsonify(consent)
+        else:
+            return jsonify({'error': '同意情報が見つかりません'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/phase1/consent/statistics', methods=['GET'])
+def get_consent_statistics():
+    """同意統計情報を取得する"""
+    if not PHASE1_AVAILABLE or not consent_manager:
+        return jsonify({'error': 'Phase 1機能が利用できません'}), 503
+    
+    try:
+        stats = consent_manager.get_consent_statistics()
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/phase1/consent/all', methods=['GET'])
+def get_all_consents():
+    """全ての同意情報を取得する"""
+    if not PHASE1_AVAILABLE or not consent_manager:
+        return jsonify({'error': 'Phase 1機能が利用できません'}), 503
+    
+    try:
+        consents = consent_manager.get_all_consents()
+        return jsonify(consents)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # ==================== 起動 ====================
