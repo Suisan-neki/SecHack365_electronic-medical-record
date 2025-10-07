@@ -673,6 +673,15 @@ const AdminDashboardPage: React.FC = () => {
                 <span className="mr-3 text-lg">📋</span>
                 システムログ表示
               </Button>
+
+              <Button
+                variant="success"
+                onClick={() => navigate('/admin/phase1')}
+                className="w-full py-3"
+              >
+                <span className="mr-3 text-lg">🚀</span>
+                Phase 1 機能管理
+              </Button>
             </div>
           </div>
 

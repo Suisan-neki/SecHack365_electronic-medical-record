@@ -4,6 +4,7 @@ import { useAppStore } from './store/useAppStore';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import Phase1ManagementPage from './pages/Phase1ManagementPage';
 import InputFormPage from './pages/InputFormPage';
 import PatientDisplayPage from './pages/PatientDisplayPage';
 import PatientSelectionModal from './components/PatientSelectionModal';
@@ -30,6 +31,10 @@ const App: React.FC = () => {
           <Route 
             path="/admin/dashboard" 
             element={<AdminDashboardPage />} 
+          />
+          <Route 
+            path="/admin/phase1" 
+            element={<Phase1ManagementPage />} 
           />
           <Route 
             path="/input-form" 
