@@ -1,7 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore } from './store/useAppStore';
+import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import InputFormPage from './pages/InputFormPage';
 import PatientDisplayPage from './pages/PatientDisplayPage';
 import PatientSelectionModal from './components/PatientSelectionModal';
@@ -9,7 +11,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import ErrorMessage from './components/ErrorMessage';
 
 const App: React.FC = () => {
-  const { error } = useAppStore();
+  const { error, user } = useAppStore();
 
   return (
     <Router>
@@ -18,8 +20,16 @@ const App: React.FC = () => {
         
         <Routes>
           <Route 
+            path="/login" 
+            element={<LoginPage />} 
+          />
+          <Route 
             path="/dashboard" 
             element={<DashboardPage />} 
+          />
+          <Route 
+            path="/admin/dashboard" 
+            element={<AdminDashboardPage />} 
           />
           <Route 
             path="/input-form" 
@@ -31,7 +41,7 @@ const App: React.FC = () => {
           />
           <Route 
             path="/" 
-            element={<Navigate to="/dashboard" replace />} 
+            element={<Navigate to={user ? (user.role === 'admin' ? '/admin/dashboard' : '/dashboard') : '/login'} replace />} 
           />
         </Routes>
         
