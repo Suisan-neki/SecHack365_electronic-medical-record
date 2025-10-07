@@ -581,30 +581,30 @@ def webauthn_register_begin():
             print(f"[ERROR] ユーザー名が空です")
             return jsonify({'error': 'ユーザー名が必要です'}), 400
         
-               # Windows Hello最適化されたWebAuthn設定
-               mock_options = {
-                   'challenge': base64.b64encode(b'mock_challenge').decode('utf-8'),
-                   'rp': {
-                       'id': 'localhost',
-                       'name': 'Medical System'
-                   },
-                   'user': {
-                       'id': base64.b64encode(username.encode('utf-8')).decode('utf-8'),
-                       'name': username,
-                       'displayName': username
-                   },
-                   'pubKeyCredParams': [
-                       {'type': 'public-key', 'alg': -7},  # ES256
-                       {'type': 'public-key', 'alg': -257} # RS256
-                   ],
-                   'timeout': 60000,
-                   'authenticatorSelection': {
-                       'authenticatorAttachment': 'platform',
-                       'userVerification': 'required',
-                       'residentKey': 'preferred'
-                   },
-                   'attestation': 'none'
-               }
+        # Windows Hello最適化されたWebAuthn設定
+        mock_options = {
+            'challenge': base64.b64encode(b'mock_challenge').decode('utf-8'),
+            'rp': {
+                'id': 'localhost',
+                'name': 'Medical System'
+            },
+            'user': {
+                'id': base64.b64encode(username.encode('utf-8')).decode('utf-8'),
+                'name': username,
+                'displayName': username
+            },
+            'pubKeyCredParams': [
+                {'type': 'public-key', 'alg': -7},  # ES256
+                {'type': 'public-key', 'alg': -257} # RS256
+            ],
+            'timeout': 60000,
+            'authenticatorSelection': {
+                'authenticatorAttachment': 'platform',
+                'userVerification': 'required',
+                'residentKey': 'preferred'
+            },
+            'attestation': 'none'
+        }
         
         print(f"[DEBUG] モック登録オプション生成成功")
         

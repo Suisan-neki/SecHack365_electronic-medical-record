@@ -4,7 +4,10 @@ import { useAppStore } from '../store/useAppStore';
 import Button from '../components/Button';
 
 const DashboardPage: React.FC = () => {
-  const { user, currentPatient, setError } = useAppStore();
+  const { currentPatient, setError } = useAppStore();
+  
+  // デフォルトユーザーを設定
+  const user = { username: 'doctor1', role: 'doctor' };
   const navigate = useNavigate();
 
   const handleExtractPatientData = () => {
@@ -26,48 +29,41 @@ const DashboardPage: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
-    window.location.href = '/login';
+    window.location.reload();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-medical-50">
       {/* ヘッダー */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="container">
+      <header className="bg-white/80 backdrop-blur-md shadow-soft border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">🏥</span>
+                <div className="w-12 h-12 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center shadow-medical">
+                  <span className="text-white text-xl">🏥</span>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">ダッシュボード</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">医療ダッシュボード</h1>
                   <p className="text-sm text-gray-600">患者情報共有システム</p>
                 </div>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-medical-500 to-medical-600 rounded-full flex items-center justify-center shadow-sm">
+                  <span className="text-sm font-bold text-white">
                     {user?.username?.charAt(0).toUpperCase()}
                   </span>
                 </div>
-                <span className="text-gray-700 font-medium">こんにちは、{user?.username}さん</span>
+                <div className="hidden sm:block">
+                  <p className="text-sm font-medium text-gray-900">こんにちは、{user?.username}さん</p>
+                  <p className="text-xs text-gray-500">医師</p>
+                </div>
               </div>
               
-              {user?.role === 'admin' && (
-                <Link
-                  to="/admin"
-                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  <span className="mr-2">👨‍💼</span>
-                  管理者画面
-                </Link>
-              )}
-              
-              <Button variant="secondary" onClick={handleLogout} className="px-4 py-2">
+              <Button variant="secondary" onClick={handleLogout} className="px-4 py-2 text-sm">
                 ログアウト
               </Button>
             </div>
@@ -75,60 +71,72 @@ const DashboardPage: React.FC = () => {
         </div>
       </header>
 
-      <main className="container py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 患者情報管理 */}
-        <div className="card mb-8">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-8 h-8 bg-medical-100 rounded-lg flex items-center justify-center">
-              <span className="text-medical-600">👥</span>
+        <div className="card animate-fade-in">
+          <div className="flex items-center space-x-4 mb-8">
+            <div className="w-12 h-12 bg-gradient-to-br from-medical-100 to-medical-200 rounded-xl flex items-center justify-center">
+              <span className="text-medical-600 text-xl">👥</span>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900">患者情報管理</h2>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">患者情報管理</h2>
+              <p className="text-sm text-gray-600">患者の選択と医療記録の入力を行います</p>
+            </div>
           </div>
           
           {currentPatient ? (
-            <div className="bg-medical-50 border border-medical-200 rounded-lg p-6 mb-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-medical-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">👤</span>
+            <div className="bg-gradient-to-r from-medical-50 to-medical-100 border border-medical-200 rounded-xl p-6 mb-8 shadow-medical">
+              <div className="flex items-center space-x-4 mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-medical-600 to-medical-700 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white text-lg">👤</span>
                 </div>
-                <h3 className="text-lg font-semibold text-medical-800">現在の患者</h3>
+                <div>
+                  <h3 className="text-xl font-bold text-medical-800">現在の患者</h3>
+                  <p className="text-sm text-medical-600">医療記録の入力が可能です</p>
+                </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">名前:</span> {currentPatient.name} ({currentPatient.name_kana})
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">生年月日:</span> {currentPatient.birth_date}
-                  </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white/70 rounded-lg p-4 border border-medical-200">
+                  <p className="text-xs font-medium text-medical-700 mb-1">患者名</p>
+                  <p className="text-lg font-bold text-gray-900">{currentPatient.name}</p>
+                  <p className="text-sm text-gray-600">({currentPatient.name_kana})</p>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">性別:</span> {currentPatient.gender}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">患者ID:</span> {currentPatient.patient_id}
-                  </p>
+                <div className="bg-white/70 rounded-lg p-4 border border-medical-200">
+                  <p className="text-xs font-medium text-medical-700 mb-1">生年月日</p>
+                  <p className="text-lg font-bold text-gray-900">{currentPatient.birth_date}</p>
+                </div>
+                <div className="bg-white/70 rounded-lg p-4 border border-medical-200">
+                  <p className="text-xs font-medium text-medical-700 mb-1">性別</p>
+                  <p className="text-lg font-bold text-gray-900">{currentPatient.gender}</p>
+                </div>
+                <div className="bg-white/70 rounded-lg p-4 border border-medical-200">
+                  <p className="text-xs font-medium text-medical-700 mb-1">患者ID</p>
+                  <p className="text-lg font-bold text-gray-900">{currentPatient.patient_id}</p>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 text-center">
-              <div className="flex items-center justify-center space-x-2 text-yellow-800">
-                <span className="text-lg">⚠️</span>
-                <p className="font-medium">患者が選択されていません</p>
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-8 mb-8 text-center shadow-soft">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
+                  <span className="text-white text-2xl">⚠️</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-yellow-800 mb-2">患者が選択されていません</h3>
+                  <p className="text-sm text-yellow-700">まず患者情報を抽出してください</p>
+                </div>
               </div>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Button
               variant="primary"
               onClick={handleExtractPatientData}
-              className="flex-1 min-w-48 py-3 text-base font-medium"
+              className="w-full py-4 text-base font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
             >
-              <span className="mr-2">📋</span>
+              <span className="mr-3 text-lg">📋</span>
               患者情報を抽出
             </Button>
             
@@ -136,75 +144,14 @@ const DashboardPage: React.FC = () => {
               variant="success"
               onClick={handleInputMedicalRecord}
               disabled={!currentPatient}
-              className="flex-1 min-w-48 py-3 text-base font-medium"
+              className="w-full py-4 text-base font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 disabled:transform-none disabled:shadow-lg"
             >
-              <span className="mr-2">📝</span>
+              <span className="mr-3 text-lg">📝</span>
               医療記録を入力
             </Button>
           </div>
         </div>
 
-        {/* システム情報 */}
-        <div className="card">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-              <span className="text-primary-600">⚙️</span>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900">システム情報</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-lg">🔒</span>
-                <h3 className="text-lg font-semibold text-gray-900">セキュリティ機能</h3>
-              </div>
-              <ul className="space-y-2">
-                <li className="flex items-center space-x-2 text-gray-700">
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  <span>RSA 2048bit デジタル署名</span>
-                </li>
-                <li className="flex items-center space-x-2 text-gray-700">
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  <span>AES-256-GCM 暗号化</span>
-                </li>
-                <li className="flex items-center space-x-2 text-gray-700">
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  <span>WebAuthn (FIDO2) 認証</span>
-                </li>
-                <li className="flex items-center space-x-2 text-gray-700">
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  <span>監査ログ</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-lg">🔗</span>
-                <h3 className="text-lg font-semibold text-gray-900">連携機能</h3>
-              </div>
-              <ul className="space-y-2">
-                <li className="flex items-center space-x-2 text-gray-700">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  <span>FHIR 標準対応</span>
-                </li>
-                <li className="flex items-center space-x-2 text-gray-700">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  <span>CSV インポート/エクスポート</span>
-                </li>
-                <li className="flex items-center space-x-2 text-gray-700">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  <span>模擬電子カルテ連携</span>
-                </li>
-                <li className="flex items-center space-x-2 text-gray-700">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  <span>リアルタイム患者表示</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
       </main>
     </div>
   );
