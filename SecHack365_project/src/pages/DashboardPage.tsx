@@ -4,11 +4,14 @@ import { useAppStore } from '../store/useAppStore';
 import Button from '../components/Button';
 
 const DashboardPage: React.FC = () => {
-  const { currentPatient, setError } = useAppStore();
-  
-  // デフォルトユーザーを設定
-  const user = { username: 'doctor1', role: 'doctor' };
+  const { currentPatient, setError, user } = useAppStore();
   const navigate = useNavigate();
+
+  // ログインしていない場合はログインページにリダイレクト
+  if (!user) {
+    navigate('/login');
+    return null;
+  }
 
   const handleExtractPatientData = () => {
     // グローバル関数を呼び出して患者選択モーダルを表示
@@ -28,8 +31,7 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    window.location.reload();
+    navigate('/login');
   };
 
   return (
@@ -50,23 +52,35 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-medical-500 to-medical-600 rounded-full flex items-center justify-center shadow-sm">
-                  <span className="text-sm font-bold text-white">
-                    {user?.username?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">こんにちは、{user?.username}さん</p>
-                  <p className="text-xs text-gray-500">医師</p>
-                </div>
-              </div>
-              
-              <Button variant="secondary" onClick={handleLogout} className="px-4 py-2 text-sm">
-                ログアウト
-              </Button>
-            </div>
+                 <div className="flex items-center space-x-4">
+                   <div className="flex items-center space-x-3">
+                     <div className="w-10 h-10 bg-gradient-to-br from-medical-500 to-medical-600 rounded-full flex items-center justify-center shadow-sm">
+                       <span className="text-sm font-bold text-white">
+                         {user?.username?.charAt(0).toUpperCase()}
+                       </span>
+                     </div>
+                     <div className="hidden sm:block">
+                       <p className="text-sm font-medium text-gray-900">こんにちは、{user?.name || user?.username}さん</p>
+                       <p className="text-xs text-gray-500">
+                         {user?.role === 'admin' ? '管理者' : 
+                          user?.role === 'doctor' ? '医師' : 
+                          user?.role === 'nurse' ? '看護師' : 'ユーザー'}
+                       </p>
+                     </div>
+                   </div>
+                   
+                   {user?.role === 'admin' && (
+                     <Link to="/admin/dashboard">
+                       <Button variant="secondary" className="px-4 py-2 text-sm">
+                         管理者画面
+                       </Button>
+                     </Link>
+                   )}
+                   
+                   <Button variant="secondary" onClick={handleLogout} className="px-4 py-2 text-sm">
+                     ログアウト
+                   </Button>
+                 </div>
           </div>
         </div>
       </header>
