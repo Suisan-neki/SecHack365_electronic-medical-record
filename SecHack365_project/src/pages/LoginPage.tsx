@@ -46,9 +46,9 @@ const LoginPage: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-medical-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="card shadow-medical-lg border-0 bg-white/80 backdrop-blur-sm">
+         <div className="min-h-screen flex items-center justify-center px-4">
+           <div className="w-full max-w-md">
+             <div className="card">
           {/* ヘッダー */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-full mb-4">
@@ -91,56 +91,40 @@ const LoginPage: React.FC = () => {
               />
             </div>
             
-            <div className="flex gap-3">
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={isLoading}
-                className="flex-1 py-3 text-base font-medium"
-              >
-                {isLoading ? 'ログイン中...' : 'パスワードログイン'}
-              </Button>
-              
-              <Link
-                to="/webauthn-login"
-                className="flex-1"
-              >
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={isLoading}
-                  className="w-full py-3 text-base font-medium"
-                >
-                  🔐 WebAuthn
-                </Button>
-              </Link>
-            </div>
+                 <Button
+                   type="submit"
+                   variant="primary"
+                   disabled={isLoading}
+                   className="w-full py-3 text-base font-medium"
+                 >
+                   {isLoading ? 'ログイン中...' : 'ログイン'}
+                 </Button>
             
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-              <div className="text-sm text-blue-800">
-                <strong className="block mb-1">WebAuthn認証:</strong>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+              <div className="text-sm text-green-800">
+                <strong className="block mb-1">シンプルログイン:</strong>
                 <span className="text-xs">
-                  指紋・顔認証などの生体認証でログインできます<br/>
-                  専用ページでユーザー名を入力してください
+                  ユーザー名とパスワードで簡単ログイン<br/>
+                  デモアカウントでお試しください
                 </span>
               </div>
             </div>
           </form>
 
           <div className="mt-6 text-center">
-            <div className="text-sm text-gray-600 mb-2">デモアカウント:</div>
+            <div className="text-sm text-gray-600 mb-2">デモアカウント（パスワード: 123456）:</div>
             <div className="flex flex-wrap justify-center gap-2 text-xs">
-              <span className="bg-gray-100 px-2 py-1 rounded">doctor1</span>
-              <span className="bg-gray-100 px-2 py-1 rounded">admin1</span>
-              <span className="bg-gray-100 px-2 py-1 rounded">patient1</span>
+              <span className="bg-blue-100 px-2 py-1 rounded text-blue-800">doctor1</span>
+              <span className="bg-purple-100 px-2 py-1 rounded text-purple-800">admin1</span>
+              <span className="bg-green-100 px-2 py-1 rounded text-green-800">patient1</span>
             </div>
           </div>
           
           {isLoading && (
-            <div className="mt-6 p-4 bg-primary-50 border border-primary-200 rounded-lg text-center">
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
               <div className="spinner mb-3"></div>
-              <div className="text-primary-700 font-medium">
-                WebAuthn認証中...
+              <div className="text-blue-700 font-medium">
+                ログイン中...
               </div>
             </div>
           )}

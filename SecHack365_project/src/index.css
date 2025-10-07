@@ -2,112 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
-/* カスタムアニメーション */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* カスタムコンポーネントスタイル */
+@layer components {
+  .btn {
+    @apply px-6 py-3 rounded-lg font-medium text-sm transition-all duration-300 ease-in-out shadow-soft hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 hover:-translate-y-0.5;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-600 text-white hover:bg-gray-700 hover:-translate-y-0.5;
+  }
+  
+  .btn-success {
+    @apply bg-gradient-to-r from-medical-600 to-medical-700 text-white hover:from-medical-700 hover:to-medical-800 hover:-translate-y-0.5;
+  }
+  
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 hover:-translate-y-0.5;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-soft border border-gray-100 p-8 mb-6 backdrop-blur-sm;
+  }
+  
+  .form-control {
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-sm transition-all duration-300 focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 bg-white;
+  }
+  
+  .form-group {
+    @apply mb-6;
+  }
+  
+  .form-group label {
+    @apply block mb-2 font-medium text-gray-700;
+  }
+  
+  .alert {
+    @apply p-4 rounded-lg mb-6 border;
+  }
+  
+  .alert-error {
+    @apply bg-red-50 text-red-800 border-red-200;
+  }
+  
+  .alert-success {
+    @apply bg-green-50 text-green-800 border-green-200;
+  }
+  
+  .tag {
+    @apply inline-block px-3 py-1 m-1 bg-gray-100 border border-gray-200 rounded-full text-xs cursor-pointer transition-all duration-300 hover:bg-gray-200;
+  }
+  
+  .tag.selected {
+    @apply bg-gradient-to-r from-primary-600 to-primary-700 text-white border-primary-600;
+  }
+  
+  .spinner {
+    @apply border-4 border-gray-200 border-t-primary-600 rounded-full w-10 h-10 animate-spin mx-auto;
+  }
 }
 
 /* ベーススタイル */
 body {
-  @apply font-sans antialiased bg-gray-50 text-gray-900;
+  @apply font-sans antialiased bg-gradient-to-br from-primary-50 to-medical-50 min-h-screen;
 }
 
 #root {
   @apply min-h-screen;
 }
 
-/* カスタムコンポーネントクラス - Tailwindベース */
-@layer components {
-  .container {
-    @apply max-w-6xl mx-auto px-5;
-  }
-
-  .btn {
-    @apply px-4 py-2 border-0 rounded cursor-pointer text-sm transition-all duration-200 no-underline inline-block text-center font-medium;
-  }
-
-  .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
-  }
-
-  .btn-secondary {
-    @apply bg-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
-  }
-
-  .btn-success {
-    @apply bg-medical-600 text-white hover:bg-medical-700 focus:ring-2 focus:ring-medical-500 focus:ring-offset-2;
-  }
-
-  .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
-  }
-
-  .btn:disabled {
-    @apply opacity-60 cursor-not-allowed;
-  }
-
-  /* フォームスタイル */
-  .form-group {
-    @apply mb-5;
-  }
-
-  .form-group label {
-    @apply block mb-2 font-medium text-gray-700;
-  }
-
-  .form-control {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
-  }
-
-  textarea.form-control {
-    @apply min-h-20 resize-y;
-  }
-
-  /* カードスタイル */
-  .card {
-    @apply bg-white rounded-lg shadow-md p-5 mb-5 border border-gray-200;
-  }
-
-  /* タグスタイル */
-  .tag {
-    @apply inline-block px-2 py-1 m-1 bg-gray-100 border border-gray-300 rounded text-xs cursor-pointer transition-all duration-200 hover:bg-gray-200;
-  }
-
-  .tag.selected {
-    @apply bg-primary-600 text-white border-primary-600;
-  }
-
-  /* ローディング */
-  .loading {
-    @apply text-center p-5;
-  }
-
-  .spinner {
-    @apply border-4 border-gray-200 border-t-primary-600 rounded-full w-10 h-10 animate-spin mx-auto;
-  }
-
-  /* アラートメッセージ */
-  .alert {
-    @apply px-4 py-3 rounded-md mb-5 border;
-  }
-
-  .alert-error {
-    @apply bg-red-50 text-red-800 border-red-200;
-  }
-
-  .alert-success {
-    @apply bg-medical-50 text-medical-800 border-medical-200;
-  }
-}
-
-/* レスポンシブデザイン */
-@media (max-width: 768px) {
-  .container {
-    @apply px-3;
-  }
-  
-  .btn {
-    @apply w-full mb-2;
-  }
-}
