@@ -73,3 +73,32 @@ SecHack365_project/build/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# 機密情報ファイル
+*_keys.json
+*_credentials.json
+user_db.json
+demo_*.json
+patients.json
+records.json
+medical_records.json
+
+# データベースファイル
+*.db
+*.sqlite3
+postgres_data/
+
+# ログファイル
+logs/
+*.log
+
+# アップロードファイル
+uploads/
+
+# バックアップファイル
+*.backup
+*.bak
+
+# 一時ファイル
+*.tmp
+*.temp
